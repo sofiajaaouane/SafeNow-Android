@@ -22,5 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SafeNow"
+rootProject.name = "safefnow2"
 include(":app")
+ 
