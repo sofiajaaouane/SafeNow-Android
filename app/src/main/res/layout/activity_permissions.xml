@@ -146,6 +146,7 @@
             </LinearLayout>
 
             <CheckBox
+                android:id="@+id/checkGps"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="false"
@@ -200,6 +201,7 @@
             </LinearLayout>
 
             <CheckBox
+                android:id="@+id/checkGpsBackground"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="false"
@@ -254,6 +256,7 @@
             </LinearLayout>
 
             <CheckBox
+                android:id="@+id/checkPhone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="false"
@@ -308,6 +311,7 @@
             </LinearLayout>
 
             <CheckBox
+                android:id="@+id/checkNotification"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="false"
