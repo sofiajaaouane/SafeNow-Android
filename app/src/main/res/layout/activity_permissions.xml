@@ -570,6 +570,7 @@
         <!--          BOUTON CTA           -->
         <!-- ══════════════════════════════ -->
         <Button
+            android:id="@+id/btnContinuePermissions"
             android:layout_width="match_parent"
             android:layout_height="54dp"
             android:text="CONTINUER"

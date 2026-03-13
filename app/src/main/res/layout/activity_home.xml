@@ -34,6 +34,7 @@
                 android:textSize="11sp" />
 
             <TextView
+                android:id="@+id/tvHomeUserName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sofia"
@@ -49,6 +50,7 @@
             android:background="@drawable/circle_avatar_red">
 
             <TextView
+                android:id="@+id/tvHomeAvatarInitials"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"

@@ -170,7 +170,7 @@
                     android:inputType="phone"
                     android:textSize="15sp"
                     android:textColor="#222222"
-                    android:hintTextColor="#BBBBBB" />
+                    android:textColorHint="#BBBBBB" />
             </LinearLayout>
         </LinearLayout>
 

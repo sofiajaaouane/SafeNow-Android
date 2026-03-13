@@ -133,7 +133,7 @@
                 android:inputType="textEmailAddress"
                 android:textSize="15sp"
                 android:textColor="#222222"
-                android:hintTextColor="#BBBBBB" />
+                android:textColorHint="#BBBBBB" />
         </LinearLayout>
 
 
@@ -170,7 +170,7 @@
                 android:inputType="textPassword"
                 android:textSize="15sp"
                 android:textColor="#222222"
-                android:hintTextColor="#BBBBBB" />
+                android:textColorHint="#BBBBBB" />
 
 
             <ImageView
