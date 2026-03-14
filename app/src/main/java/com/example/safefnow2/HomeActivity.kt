@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,7 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
+        AlertHelper.ensureChannel(this)
 
         val tvUserName = findViewById<TextView>(R.id.tvHomeUserName)
         val tvInitials = findViewById<TextView>(R.id.tvHomeAvatarInitials)

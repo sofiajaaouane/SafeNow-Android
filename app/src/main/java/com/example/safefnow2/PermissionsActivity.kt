@@ -28,12 +28,6 @@ class PermissionsActivity : ComponentActivity() {
 
     private var pendingPermissionCheckId: Int? = null
 
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { _ ->
-        createAccountAndGoHome()
-    }
-
     private val permissionCheckLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
@@ -48,9 +42,8 @@ class PermissionsActivity : ComponentActivity() {
         setContentView(R.layout.activity_permissions)
 
         val checkGps = findViewById<CheckBox>(R.id.checkGps)
-        val checkGpsBackground = findViewById<CheckBox>(R.id.checkGpsBackground)
-        val checkPhone = findViewById<CheckBox>(R.id.checkPhone)
         val checkNotification = findViewById<CheckBox>(R.id.checkNotification)
+        val checkPhone = findViewById<CheckBox>(R.id.checkPhone)
 
         checkGps.setOnClickListener {
             if (!checkGps.isChecked) return@setOnClickListener
@@ -62,24 +55,6 @@ class PermissionsActivity : ComponentActivity() {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 )
             )
-        }
-
-        checkGpsBackground.setOnClickListener {
-            if (!checkGpsBackground.isChecked) return@setOnClickListener
-            checkGpsBackground.isChecked = false
-            pendingPermissionCheckId = R.id.checkGpsBackground
-            val perms = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                perms.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-            }
-            permissionCheckLauncher.launch(perms.toTypedArray())
-        }
-
-        checkPhone.setOnClickListener {
-            if (!checkPhone.isChecked) return@setOnClickListener
-            checkPhone.isChecked = false
-            pendingPermissionCheckId = R.id.checkPhone
-            permissionCheckLauncher.launch(arrayOf(Manifest.permission.CALL_PHONE))
         }
 
         checkNotification.setOnClickListener {
@@ -94,43 +69,57 @@ class PermissionsActivity : ComponentActivity() {
             }
         }
 
-        updateCheckboxStates(checkGps, checkGpsBackground, checkPhone, checkNotification)
+        checkPhone.setOnClickListener {
+            if (!checkPhone.isChecked) return@setOnClickListener
+            checkPhone.isChecked = false
+            pendingPermissionCheckId = R.id.checkPhone
+            permissionCheckLauncher.launch(arrayOf(Manifest.permission.CALL_PHONE))
+        }
+
+        updateCheckboxStates(checkGps, checkNotification, checkPhone)
 
         findViewById<Button>(R.id.btnContinuePermissions).setOnClickListener {
-            val permissions = mutableListOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+            if (!allRequiredPermissionsGranted()) {
+                Toast.makeText(this, "Activez les 3 permissions pour creer votre compte", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                permissions.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-            }
-            permissionLauncher.launch(permissions.toTypedArray())
+            createAccountAndGoHome()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val checkGps = findViewById<CheckBox>(R.id.checkGps)
+        val checkNotification = findViewById<CheckBox>(R.id.checkNotification)
+        val checkPhone = findViewById<CheckBox>(R.id.checkPhone)
+        updateCheckboxStates(checkGps, checkNotification, checkPhone)
+    }
+
+    private fun allRequiredPermissionsGranted(): Boolean {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return false
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) return false
+        return true
     }
 
     private fun updateCheckboxStates(
         checkGps: CheckBox,
-        checkGpsBackground: CheckBox,
-        checkPhone: CheckBox,
-        checkNotification: CheckBox
+        checkNotification: CheckBox,
+        checkPhone: CheckBox
     ) {
-        checkGps.isChecked = hasLocation()
-        checkGpsBackground.isChecked = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
-        } else true
-        checkPhone.isChecked = ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
+        checkGps.isChecked = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         checkNotification.isChecked = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         } else true
+        checkPhone.isChecked = ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun hasLocation(): Boolean =
-        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-
     private fun createAccountAndGoHome() {
+        if (!allRequiredPermissionsGranted()) {
+            Toast.makeText(this, "Activez les 3 permissions pour creer votre compte", Toast.LENGTH_SHORT).show()
+            return
+        }
         val phone = intent.getStringExtra(SignUpStep1Activity.EXTRA_PHONE) ?: ""
         val passwordHash = intent.getStringExtra(SignUpStep2Activity.EXTRA_PASSWORD_HASH) ?: ""
         val email = intent.getStringExtra(SignUpStep2Activity.EXTRA_EMAIL)

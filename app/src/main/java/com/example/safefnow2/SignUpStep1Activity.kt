@@ -32,9 +32,13 @@ class SignUpStep1Activity : ComponentActivity() {
         }
 
         btnNext.setOnClickListener {
+            if (spinner.selectedItemPosition < 0) {
+                Toast.makeText(this, "Selectionnez le pays puis entrez exactement 9 chiffres", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             val localNumber = etPhone.text.toString().trim()
-            if (localNumber.isEmpty()) {
-                Toast.makeText(this, "Entrez votre numero", Toast.LENGTH_SHORT).show()
+            if (localNumber.length != 9 || !localNumber.all { it.isDigit() }) {
+                Toast.makeText(this, "Selectionnez le pays puis entrez exactement 9 chiffres", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             val code = countries[spinner.selectedItemPosition].second

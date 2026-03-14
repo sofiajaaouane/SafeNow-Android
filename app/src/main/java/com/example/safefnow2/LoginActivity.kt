@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.PasswordHasher
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +25,15 @@ class LoginActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (SessionManager.getCurrentUserId(this) != null) {
+            startActivity(Intent(this, HomeActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+            finish()
+            return
+        }
         setContentView(R.layout.login)
+        AlertHelper.ensureChannel(this)
 
         val editPhone = findViewById<EditText>(R.id.editLoginPhone)
         val editPassword = findViewById<EditText>(R.id.editLoginPassword)

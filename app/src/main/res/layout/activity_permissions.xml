@@ -154,7 +154,7 @@
                 android:layout_marginStart="8dp" />
         </LinearLayout>
 
-        <!-- Card: GPS arrière-plan -->
+        <!-- Card: Notifications -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -174,7 +174,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_gravity="center"
-                    android:src="@drawable/ic_perm_gps_bg" />
+                    android:src="@drawable/ic_perm_notif" />
             </FrameLayout>
 
             <LinearLayout
@@ -186,7 +186,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Localisation en arriere-plan"
+                    android:text="Sons/Vibrations de notification"
                     android:textColor="#111111"
                     android:textSize="14sp"
                     android:textStyle="bold"
@@ -195,13 +195,13 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Continuer le suivi meme si l'app est fermee"
+                    android:text="Runtime (Boîte de dialogue)"
                     android:textColor="#999999"
                     android:textSize="12sp" />
             </LinearLayout>
 
             <CheckBox
-                android:id="@+id/checkGpsBackground"
+                android:id="@+id/checkNotification"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="false"
@@ -264,312 +264,6 @@
                 android:layout_marginStart="8dp" />
         </LinearLayout>
 
-        <!-- Card: Notifications -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/card_white"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="10dp"
-            android:elevation="3dp">
-
-            <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/icon_perm_bg_dark"
-                android:layout_marginEnd="14dp">
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_perm_notif" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Notifications"
-                    android:textColor="#111111"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="3dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Alertes et confirmations d'intervention"
-                    android:textColor="#999999"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <CheckBox
-                android:id="@+id/checkNotification"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:buttonTint="#222222"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
-
-        <!-- ══════════════════════════════ -->
-        <!--     SECTION IMPORTANTES       -->
-        <!-- ══════════════════════════════ -->
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingTop="20dp"
-            android:paddingBottom="12dp">
-
-            <View
-                android:layout_width="3dp"
-                android:layout_height="16dp"
-                android:background="@drawable/section_bar_gray"
-                android:layout_marginEnd="10dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="RECOMMANDEES"
-                android:textColor="#777777"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.15" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1"
-                android:background="#E8E8E8"
-                android:layout_marginStart="10dp" />
-        </LinearLayout>
-
-        <!-- Card: Microphone -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/card_white"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="10dp"
-            android:elevation="3dp">
-
-            <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/icon_perm_bg_light"
-                android:layout_marginEnd="14dp">
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_perm_micro" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Microphone"
-                    android:textColor="#111111"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="3dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Communication vocale avec les secours"
-                    android:textColor="#999999"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:buttonTint="#AAAAAA"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
-
-        <!-- Card: Camera -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/card_white"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="10dp"
-            android:elevation="3dp">
-
-            <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/icon_perm_bg_light"
-                android:layout_marginEnd="14dp">
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_perm_camera" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Camera"
-                    android:textColor="#111111"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="3dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Envoyer photo ou video de la situation"
-                    android:textColor="#999999"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:buttonTint="#AAAAAA"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
-
-        <!-- Card: Contacts -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/card_white"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="10dp"
-            android:elevation="3dp">
-
-            <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/icon_perm_bg_light"
-                android:layout_marginEnd="14dp">
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_perm_contacts" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Contacts"
-                    android:textColor="#111111"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="3dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Contacts d'urgence personnels a prevenir"
-                    android:textColor="#999999"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:buttonTint="#AAAAAA"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
-
-        <!-- Card: SMS -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/card_white"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="16dp"
-            android:layout_marginBottom="24dp"
-            android:elevation="3dp">
-
-            <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/icon_perm_bg_light"
-                android:layout_marginEnd="14dp">
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_perm_sms" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="SMS"
-                    android:textColor="#111111"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="3dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Envoyer une alerte SMS automatique"
-                    android:textColor="#999999"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:buttonTint="#AAAAAA"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
-
         <!-- ══════════════════════════════ -->
         <!--          BOUTON CTA           -->
         <!-- ══════════════════════════════ -->
@@ -586,16 +280,6 @@
             android:elevation="4dp"
             android:stateListAnimator="@null"
             android:layout_marginBottom="14dp" />
-
-        <!-- Lien passer -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Passer cette etape"
-            android:textColor="#BBBBBB"
-            android:textSize="13sp"
-            android:gravity="center"
-            android:paddingBottom="8dp" />
 
     </LinearLayout>
 </ScrollView>
