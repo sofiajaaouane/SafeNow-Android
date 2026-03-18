@@ -4,7 +4,6 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.safefnow2.data.local.dao.AlertDao
 import com.example.safefnow2.data.local.dao.AmitierDao
-import com.example.safefnow2.data.local.dao.ContactDao
 import com.example.safefnow2.data.local.dao.DeclarationAlertDao
 import com.example.safefnow2.data.local.dao.DiseaseDao
 import com.example.safefnow2.data.local.dao.EmergencyGroupDao
@@ -13,7 +12,6 @@ import com.example.safefnow2.data.local.dao.ItemDao
 import com.example.safefnow2.data.local.dao.UserDao
 import com.example.safefnow2.data.local.entity.Alert
 import com.example.safefnow2.data.local.entity.Amitier
-import com.example.safefnow2.data.local.entity.Contact
 import com.example.safefnow2.data.local.entity.DeclarationAlert
 import com.example.safefnow2.data.local.entity.Disease
 import com.example.safefnow2.data.local.entity.EmergencyGroup
@@ -31,9 +29,8 @@ import com.example.safefnow2.data.local.entity.User
                         Disease::class,
                         EmergencyGroup::class,
                         GroupMember::class,
-                        Item::class,
-                        Contact::class],
-        version = 2,
+                        Item::class],
+        version = 3,
         exportSchema = false
 )
 abstract class SafeNowDatabase : RoomDatabase() {
@@ -45,5 +42,4 @@ abstract class SafeNowDatabase : RoomDatabase() {
     abstract fun emergencyGroupDao(): EmergencyGroupDao
     abstract fun groupMemberDao(): GroupMemberDao
     abstract fun itemDao(): ItemDao
-    abstract fun contactDao(): ContactDao
 }

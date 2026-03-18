@@ -1,12 +1,14 @@
-package com.example.safefnow2
+package com.example.safefnow2.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import com.example.safefnow2.R
 import com.example.safefnow2.util.PasswordHasher
 
 class SignUpStep2Activity : ComponentActivity() {
@@ -26,9 +28,9 @@ class SignUpStep2Activity : ComponentActivity() {
         ivToggle.setOnClickListener {
             passwordVisible = !passwordVisible
             etPassword.inputType = if (passwordVisible) {
-                android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
             } else {
-                android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             }
         }
 
