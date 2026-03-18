@@ -1,6 +1,8 @@
 package com.example.safefnow2
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import com.example.safefnow2.data.local.DatabaseProvider
@@ -24,6 +26,10 @@ class HomeActivity : ComponentActivity() {
 
         val tvUserName = findViewById<TextView>(R.id.tvHomeUserName)
         val tvInitials = findViewById<TextView>(R.id.tvHomeAvatarInitials)
+
+        findViewById<LinearLayout>(R.id.navContacts).setOnClickListener {
+            startActivity(Intent(this, ContactsActivity::class.java))
+        }
 
         val userId = SessionManager.getCurrentUserId(this) ?: return
         scope.launch {

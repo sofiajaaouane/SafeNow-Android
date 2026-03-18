@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <EditText
+        android:id="@+id/dialogContactFullName"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/input_field_bg"
+        android:hint="Nom complet"
+        android:textColor="#111111"
+        android:textColorHint="#AAAAAA"
+        android:textSize="14sp"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:inputType="textPersonName"
+        android:maxLines="1" />
+
+    <EditText
+        android:id="@+id/dialogContactPhone"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/input_field_bg"
+        android:hint="Numéro de téléphone"
+        android:textColor="#111111"
+        android:textColorHint="#AAAAAA"
+        android:textSize="14sp"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:inputType="phone"
+        android:maxLines="1" />
+</LinearLayout>
