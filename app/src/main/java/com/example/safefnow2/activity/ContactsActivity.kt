@@ -1,5 +1,6 @@
 package com.example.safefnow2.activity
 
+import android.content.Intent
 import android.app.AlertDialog
 import android.os.Bundle
 import android.text.Editable
@@ -7,13 +8,13 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.ArrayAdapter
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -32,12 +33,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 data class ContactUiItem(
-    val amitierIdUser1: String,
-    val amitierIdUser2: String,
-    val prenom: String,
-    val nom: String,
-    val fullName: String,
-    val phoneNumber: String
+        val amitierIdUser1: String,
+        val amitierIdUser2: String,
+        val contactUserId: String,
+        val prenom: String,
+        val nom: String,
+        val fullName: String,
+        val phoneNumber: String
 )
 
 class ContactsActivity : ComponentActivity() {
@@ -57,71 +59,110 @@ class ContactsActivity : ComponentActivity() {
 
         back.setOnClickListener { finish() }
 
-        search.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                searchQuery.value = s?.toString()?.trim() ?: ""
-            }
-            override fun afterTextChanged(s: Editable?) {}
-        })
+        search.addTextChangedListener(
+                object : TextWatcher {
+                    override fun beforeTextChanged(
+                            s: CharSequence?,
+                            start: Int,
+                            count: Int,
+                            after: Int
+                    ) {}
+                    override fun onTextChanged(
+                            s: CharSequence?,
+                            start: Int,
+                            before: Int,
+                            count: Int
+                    ) {
+                        searchQuery.value = s?.toString()?.trim() ?: ""
+                    }
+                    override fun afterTextChanged(s: Editable?) {}
+                }
+        )
 
-        adapter = ContactsAdapter(onDelete = { item -> showDeleteConfirm(item) })
+        adapter =
+                ContactsAdapter(
+                        onDelete = { item -> showDeleteConfirm(item) },
+                        onContactClick = { item -> openContactDetails(item) }
+                )
         list.layoutManager = LinearLayoutManager(this)
         list.adapter = adapter
 
         val currentUserId = SessionManager.getCurrentUserId(this) ?: return
         val db = DatabaseProvider.get(this)
 
-        combine(db.amitierDao().getAllFlow(), db.userDao().getAllFlow(), searchQuery) { amitierList, users, query ->
-            val usersById = users.associateBy { it.idUser }
-            val acceptedRelations = amitierList.filter {
-                it.status.trim().equals("ACCEPTED", ignoreCase = true) &&
-                    (it.idUser1 == currentUserId || it.idUser2 == currentUserId)
-            }
+        combine(db.amitierDao().getAllFlow(), db.userDao().getAllFlow(), searchQuery) {
+                        amitierList,
+                        users,
+                        query ->
+                    val usersById = users.associateBy { it.idUser }
+                    val acceptedRelations =
+                            amitierList.filter {
+                                it.status.trim().equals("ACCEPTED", ignoreCase = true) &&
+                                        (it.idUser1 == currentUserId || it.idUser2 == currentUserId)
+                            }
 
-            val items = acceptedRelations.mapNotNull { relation ->
-                val otherUserId = if (relation.idUser1 == currentUserId) relation.idUser2 else relation.idUser1
-                val other = usersById[otherUserId] ?: return@mapNotNull null
-                ContactUiItem(
-                    amitierIdUser1 = relation.idUser1,
-                    amitierIdUser2 = relation.idUser2,
-                    prenom = other.prenom,
-                    nom = other.nom,
-                    fullName = "${other.prenom} ${other.nom}",
-                    phoneNumber = other.numTel
-                )
-            }.sortedBy { it.fullName }
+                    val items =
+                            acceptedRelations
+                                    .mapNotNull { relation ->
+                                        val otherUserId =
+                                                if (relation.idUser1 == currentUserId)
+                                                        relation.idUser2
+                                                else relation.idUser1
+                                        val other = usersById[otherUserId] ?: return@mapNotNull null
+                                        ContactUiItem(
+                                                amitierIdUser1 = relation.idUser1,
+                                                amitierIdUser2 = relation.idUser2,
+                                                contactUserId = otherUserId,
+                                                prenom = other.prenom,
+                                                nom = other.nom,
+                                                fullName = "${other.prenom} ${other.nom}",
+                                                phoneNumber = other.numTel
+                                        )
+                                    }
+                                    .sortedBy { it.fullName }
 
-            if (query.isEmpty()) {
-                items
-            } else {
-                val normalizedQuery = query.trim()
-                val hasSpace = normalizedQuery.contains(' ')
+                    if (query.isEmpty()) {
+                        items
+                    } else {
+                        val normalizedQuery = query.trim()
+                        val hasSpace = normalizedQuery.contains(' ')
 
-                if (hasSpace) {
-                    items.filter { it.fullName.contains(normalizedQuery, ignoreCase = true) }
-                } else {
-                    items.filter {
-                        it.prenom.contains(normalizedQuery, ignoreCase = true) ||
-                            it.nom.contains(normalizedQuery, ignoreCase = true)
+                        if (hasSpace) {
+                            items.filter {
+                                it.fullName.contains(normalizedQuery, ignoreCase = true)
+                            }
+                        } else {
+                            items.filter {
+                                it.prenom.contains(normalizedQuery, ignoreCase = true) ||
+                                        it.nom.contains(normalizedQuery, ignoreCase = true)
+                            }
+                        }
                     }
                 }
-            }
-        }.onEach { filtered ->
-            adapter.submitList(filtered)
-            empty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
-        }.launchIn(lifecycleScope)
+                .onEach { filtered ->
+                    adapter.submitList(filtered)
+                    empty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+                }
+                .launchIn(lifecycleScope)
 
         fabAdd.setOnClickListener { showAddContactDialog() }
     }
 
+    private fun openContactDetails(item: ContactUiItem) {
+        val intent =
+                Intent(this, ContactDetailsActivity::class.java).apply {
+                    putExtra(ContactDetailsActivity.EXTRA_CONTACT_USER_ID, item.contactUserId)
+                }
+        startActivity(intent)
+    }
+
     private fun showDeleteConfirm(item: ContactUiItem) {
         AlertDialog.Builder(this)
-            .setTitle("Supprimer le contact")
-            .setMessage("Supprimer ${item.fullName} ?")
-            .setPositiveButton("Supprimer") { _, _ -> deleteAmitier(item) }
-            .setNegativeButton("Annuler", null)
-            .show()
+                .setTitle("Supprimer le contact")
+                .setMessage("Supprimer ${item.fullName} ?")
+                .setPositiveButton("Supprimer") { _, _ -> deleteAmitier(item) }
+                .setNegativeButton("Annuler", null)
+                .show()
     }
 
     private fun deleteAmitier(item: ContactUiItem) {
@@ -129,7 +170,14 @@ class ContactsActivity : ComponentActivity() {
             withContext(Dispatchers.IO) {
                 val db = DatabaseProvider.get(this@ContactsActivity)
                 // Delete needs matching primary keys: id_user1 + id_user2.
-                db.amitierDao().delete(Amitier(idUser1 = item.amitierIdUser1, idUser2 = item.amitierIdUser2, status = "PENDING"))
+                db.amitierDao()
+                        .delete(
+                                Amitier(
+                                        idUser1 = item.amitierIdUser1,
+                                        idUser2 = item.amitierIdUser2,
+                                        status = "PENDING"
+                                )
+                        )
             }
             Toast.makeText(this@ContactsActivity, "Contact supprimé", Toast.LENGTH_SHORT).show()
         }
@@ -149,33 +197,41 @@ class ContactsActivity : ComponentActivity() {
 
         val tvNoUser = view.findViewById<TextView>(R.id.tvNoUser)
 
-        val countries = listOf(
-            "Morocco +212" to "+212",
-            "USA +1" to "+1"
-        )
-        spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, countries.map { it.first })
-            .also { adapter ->
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
+        val countries = listOf("Morocco +212" to "+212", "USA +1" to "+1")
+        spinner.adapter =
+                ArrayAdapter(this, android.R.layout.simple_spinner_item, countries.map { it.first })
+                        .also { adapter ->
+                            adapter.setDropDownViewResource(
+                                    android.R.layout.simple_spinner_dropdown_item
+                            )
+                        }
 
         var foundUser: User? = null
 
         resultContainer.visibility = View.GONE
         tvNoUser.visibility = View.GONE
 
-        val dialog = AlertDialog.Builder(this)
-            .setView(view)
-            .setNegativeButton("Annuler", null)
-            .create()
+        val dialog =
+                AlertDialog.Builder(this).setView(view).setNegativeButton("Annuler", null).create()
 
         btnSearch.setOnClickListener {
             val localNumber = etPhoneNumber.text.toString().trim()
             if (spinner.selectedItemPosition < 0) {
-                Toast.makeText(this, "Selectionnez le pays puis entrez exactement 9 chiffres", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                                this,
+                                "Selectionnez le pays puis entrez exactement 9 chiffres",
+                                Toast.LENGTH_SHORT
+                        )
+                        .show()
                 return@setOnClickListener
             }
             if (localNumber.length != 9 || !localNumber.all { it.isDigit() }) {
-                Toast.makeText(this, "Selectionnez le pays puis entrez exactement 9 chiffres", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                                this,
+                                "Selectionnez le pays puis entrez exactement 9 chiffres",
+                                Toast.LENGTH_SHORT
+                        )
+                        .show()
                 return@setOnClickListener
             }
 
@@ -184,9 +240,7 @@ class ContactsActivity : ComponentActivity() {
 
             lifecycleScope.launch {
                 val db = DatabaseProvider.get(this@ContactsActivity)
-                val user = withContext(Dispatchers.IO) {
-                    db.userDao().getByPhone(fullPhone)
-                }
+                val user = withContext(Dispatchers.IO) { db.userDao().getByPhone(fullPhone) }
 
                 foundUser = user
 
@@ -204,35 +258,51 @@ class ContactsActivity : ComponentActivity() {
         }
 
         btnSendAmitier.setOnClickListener {
-            val user = foundUser ?: run {
-                Toast.makeText(this, "Cherchez un utilisateur d'abord", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+            val user =
+                    foundUser
+                            ?: run {
+                                Toast.makeText(
+                                                this,
+                                                "Cherchez un utilisateur d'abord",
+                                                Toast.LENGTH_SHORT
+                                        )
+                                        .show()
+                                return@setOnClickListener
+                            }
 
-            val currentUserId = SessionManager.getCurrentUserId(this) ?: run {
-                Toast.makeText(this, "Session invalide", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+            val currentUserId =
+                    SessionManager.getCurrentUserId(this)
+                            ?: run {
+                                Toast.makeText(this, "Session invalide", Toast.LENGTH_SHORT).show()
+                                return@setOnClickListener
+                            }
 
             lifecycleScope.launch {
                 val db = DatabaseProvider.get(this@ContactsActivity)
-                val existing = withContext(Dispatchers.IO) {
-                    db.amitierDao().getById(currentUserId, user.idUser)
-                }
+                val existing =
+                        withContext(Dispatchers.IO) {
+                            db.amitierDao().getById(currentUserId, user.idUser)
+                        }
 
                 if (existing != null) {
-                    Toast.makeText(this@ContactsActivity, "Demande déjà envoyée", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                                    this@ContactsActivity,
+                                    "Demande déjà envoyée",
+                                    Toast.LENGTH_SHORT
+                            )
+                            .show()
                     return@launch
                 }
 
                 withContext(Dispatchers.IO) {
-                    db.amitierDao().insert(
-                        Amitier(
-                            idUser1 = currentUserId,
-                            idUser2 = user.idUser,
-                            status = "PENDING"
-                        )
-                    )
+                    db.amitierDao()
+                            .insert(
+                                    Amitier(
+                                            idUser1 = currentUserId,
+                                            idUser2 = user.idUser,
+                                            status = "PENDING"
+                                    )
+                            )
                 }
 
                 Toast.makeText(this@ContactsActivity, "Demande envoyée", Toast.LENGTH_SHORT).show()
@@ -245,8 +315,10 @@ class ContactsActivity : ComponentActivity() {
 }
 
 class ContactsAdapter(
-    private val onDelete: (ContactUiItem) -> Unit
-) : RecyclerView.Adapter<ContactsAdapter.Holder>() {
+        private val onDelete: (ContactUiItem) -> Unit,
+        private val onContactClick: (ContactUiItem) -> Unit
+) :
+        RecyclerView.Adapter<ContactsAdapter.Holder>() {
 
     private var items: List<ContactUiItem> = emptyList()
 
@@ -257,7 +329,7 @@ class ContactsAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
         val v = LayoutInflater.from(parent.context).inflate(R.layout.item_contact, parent, false)
-        return Holder(v, onDelete)
+        return Holder(v, onDelete, onContactClick)
     }
 
     override fun onBindViewHolder(holder: Holder, position: Int) {
@@ -267,9 +339,11 @@ class ContactsAdapter(
     override fun getItemCount(): Int = items.size
 
     class Holder(
-        itemView: View,
-        private val onDelete: (ContactUiItem) -> Unit
-    ) : RecyclerView.ViewHolder(itemView) {
+            itemView: View,
+            private val onDelete: (ContactUiItem) -> Unit,
+            private val onContactClick: (ContactUiItem) -> Unit
+    ) :
+            RecyclerView.ViewHolder(itemView) {
         private val fullName = itemView.findViewById<TextView>(R.id.itemContactFullName)
         private val phone = itemView.findViewById<TextView>(R.id.itemContactPhone)
         private val deleteBtn = itemView.findViewById<ImageButton>(R.id.itemContactDelete)
@@ -277,6 +351,9 @@ class ContactsAdapter(
         fun bind(item: ContactUiItem) {
             fullName.text = item.fullName
             phone.text = item.phoneNumber
+            itemView.setOnClickListener { onContactClick(item) }
+            fullName.setOnClickListener { onContactClick(item) }
+            phone.setOnClickListener { onContactClick(item) }
             deleteBtn.setOnClickListener { onDelete(item) }
         }
     }
