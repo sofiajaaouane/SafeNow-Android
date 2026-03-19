@@ -37,4 +37,18 @@ interface DiseaseDao {
 
     @Query("SELECT * FROM disease WHERE id_user = :idUser ORDER BY name")
     fun getByUserIdFlow(idUser: String): Flow<List<Disease>>
+    // Supprimer toutes les maladies d'un utilisateur
+    @Query("DELETE FROM disease WHERE id_user = :idUser")
+    suspend fun deleteByUserId(idUser: String)
+
+    @Query("SELECT COUNT(*) FROM disease WHERE id_user = :idUser AND name = :diseaseName")
+    suspend fun countDiseaseForUser(idUser: String, diseaseName: String): Int
+
+
+
+
+
+
+
+
 }

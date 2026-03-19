@@ -1,3 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">safefnow2</string>
+    <string name="app_name">SafeNow</string>
+
+    <!-- Profile Header -->
+    <string name="back">Retour</string>
+    <string name="user_icon">Icone utilisateur</string>
+    <string name="default_user_name">Sofia Jaa</string>
+    <string name="user_role">Utilisateur SafeNow</string>
+
+    <!-- Section titles -->
+    <string name="section_personal_info">Informations personnelles</string>
+    <string name="section_health">Informations de sante</string>
+    <string name="section_security">Securite</string>
+
+    <!-- Field labels -->
+    <string name="label_nom">NOM</string>
+    <string name="label_prenom">PRENOM</string>
+    <string name="label_email">EMAIL</string>
+    <string name="label_description">DESCRIPTION</string>
+    <string name="label_blood_type">GROUPE SANGUIN</string>
+    <string name="label_diseases">MALADIES</string>
+    <string name="label_phone">NUMERO DE TELEPHONE</string>
+    <string name="label_password">MOT DE PASSE</string>
+
+    <!-- Hints -->
+    <string name="hint_nom">Votre nom</string>
+    <string name="hint_prenom">Votre prenom</string>
+    <string name="hint_email">votre@email.com</string>
+    <string name="hint_description">Motifs. Passionne(e) par...</string>
+    <string name="hint_blood_type">Ex: A+, O-, B+</string>
+    <string name="hint_disease">Nom de la maladie</string>
+    <string name="hint_phone">0600000000</string>
+    <string name="hint_password">Nouveau mot de passe</string>
+
+    <!-- Buttons -->
+    <string name="btn_add_disease">Ajouter une maladie</string>
+    <string name="btn_save">ENREGISTRER LES MODIFICATIONS</string>
+    <string name="btn_delete_account">Supprimer mon compte</string>
+    <string name="btn_remove_disease">Supprimer</string>
+    <string name="toggle_password">Afficher/Masquer mot de passe</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_delete_title">Supprimer mon compte</string>
+    <string name="dialog_delete_message">Etes-vous sur de vouloir supprimer votre compte ? Cette action est irreversible.</string>
+    <string name="dialog_delete_confirm">Supprimer</string>
+    <string name="dialog_delete_cancel">Annuler</string>
+
+    <!-- Toasts / Messages -->
+    <string name="toast_user_not_found">Utilisateur introuvable</string>
+    <string name="toast_profile_not_found">Profil introuvable</string>
+    <string name="toast_save_success">Profil mis a jour</string>
+    <string name="toast_account_deleted">Compte supprime</string>
+    <string name="error_nom_required">Le nom est obligatoire</string>
+    <string name="error_prenom_required">Le prenom est obligatoire</string>
+    <string name="error_phone_required">Le numero est obligatoire</string>
+    <string name="logout">Deconnexion</string>
 </resources>
