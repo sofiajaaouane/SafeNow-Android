@@ -7,6 +7,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import com.example.safefnow2.R
+import com.example.safefnow2.ProfileActivity
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.SessionManager

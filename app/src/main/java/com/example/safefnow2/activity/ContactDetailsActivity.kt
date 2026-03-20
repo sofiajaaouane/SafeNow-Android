@@ -100,7 +100,7 @@ class ContactDetailsActivity : ComponentActivity() {
         if (diseases.isEmpty()) {
             val emptyTv = TextView(this).apply {
                 text = "Aucune disease"
-                textColor = 0xFF999999.toInt()
+                setTextColor(0xFF999999.toInt())
                 textSize = 14f
                 setPadding(0, 8, 0, 0)
             }
@@ -109,7 +109,7 @@ class ContactDetailsActivity : ComponentActivity() {
             diseases.forEach { disease ->
                 val diseaseTv = TextView(this).apply {
                     text = disease.name
-                    textColor = 0xFF111111.toInt()
+                    setTextColor(0xFF111111111.toInt())
                     textSize = 14f
                     setPadding(0, 6, 0, 0)
                 }
