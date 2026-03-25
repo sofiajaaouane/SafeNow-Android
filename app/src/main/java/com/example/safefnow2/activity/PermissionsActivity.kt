@@ -1,4 +1,4 @@
-package com.example.safefnow2
+package com.example.safefnow2.activity
 
 import android.Manifest
 import android.content.Intent
@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.util.SessionManager

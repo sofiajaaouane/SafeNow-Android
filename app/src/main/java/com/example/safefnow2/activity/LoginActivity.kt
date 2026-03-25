@@ -1,13 +1,15 @@
-package com.example.safefnow2
+package com.example.safefnow2.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.PasswordHasher
@@ -45,9 +47,9 @@ class LoginActivity : ComponentActivity() {
         imgToggle.setOnClickListener {
             passwordVisible = !passwordVisible
             editPassword.inputType = if (passwordVisible) {
-                android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
             } else {
-                android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             }
             imgToggle.setImageResource(
                 if (passwordVisible) R.drawable.ic_visibility_off_gray else R.drawable.ic_visibility_gray

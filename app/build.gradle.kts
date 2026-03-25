@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.recyclerview)
 
     // ── Material (nécessaire pour Button avec cornerRadius dans XML) ─────────
     implementation("com.google.android.material:material:1.12.0")
@@ -66,7 +67,6 @@ dependencies {
     // ── CardView (nécessaire pour androidx.cardview.widget.CardView) ─────────
     implementation("androidx.cardview:cardview:1.0.0")
 
-    // ── Room ─────────────────────────────────────────────────────────────────
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)

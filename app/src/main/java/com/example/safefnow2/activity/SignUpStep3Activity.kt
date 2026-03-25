@@ -1,4 +1,4 @@
-package com.example.safefnow2
+package com.example.safefnow2.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,6 +6,7 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import com.example.safefnow2.R
 
 class SignUpStep3Activity : ComponentActivity() {
 

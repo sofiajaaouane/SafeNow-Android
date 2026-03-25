@@ -14,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.example.safefnow2.activity.LoginActivity
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.Disease
 import com.example.safefnow2.data.local.entity.User
@@ -64,9 +65,9 @@ class ProfileActivity : AppCompatActivity() {
             .setMessage("Voulez-vous vous deconnecter ?")
             .setPositiveButton("Deconnecter") { _, _ ->
                 SessionManager.clear(this)
-                startActivity(Intent(this, LoginActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                })
+                val intent = Intent(this, LoginActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                startActivity(intent)
                 finish()
             }
             .setNegativeButton("Annuler", null)
@@ -82,9 +83,9 @@ class ProfileActivity : AppCompatActivity() {
         val userId = SessionManager.getCurrentUserId(this)
         if (userId == null) {
             Toast.makeText(this, "Utilisateur introuvable", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            })
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            startActivity(intent)
             finish()
             return
         }
@@ -336,9 +337,9 @@ class ProfileActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 SessionManager.clear(this@ProfileActivity)
                 Toast.makeText(this@ProfileActivity, "Compte supprime", Toast.LENGTH_SHORT).show()
-                startActivity(Intent(this@ProfileActivity, LoginActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                })
+                val intent = Intent(this@ProfileActivity, LoginActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                startActivity(intent)
                 finish()
             }
         }

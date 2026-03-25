@@ -20,18 +20,18 @@ import com.example.safefnow2.data.local.entity.Item
 import com.example.safefnow2.data.local.entity.User
 
 @Database(
-    entities = [
-        User::class,
-        Alert::class,
-        Amitier::class,
-        DeclarationAlert::class,
-        Disease::class,
-        EmergencyGroup::class,
-        GroupMember::class,
-        Item::class
-    ],
-    version = 1,
-    exportSchema = false
+        entities =
+                [
+                        User::class,
+                        Alert::class,
+                        Amitier::class,
+                        DeclarationAlert::class,
+                        Disease::class,
+                        EmergencyGroup::class,
+                        GroupMember::class,
+                        Item::class],
+        version = 3,
+        exportSchema = false
 )
 abstract class SafeNowDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao

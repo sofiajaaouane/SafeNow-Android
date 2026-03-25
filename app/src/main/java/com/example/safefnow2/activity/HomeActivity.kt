@@ -1,4 +1,4 @@
-package com.example.safefnow2
+package com.example.safefnow2.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,6 +10,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AlertDialog
+import com.example.safefnow2.R
+import com.example.safefnow2.ProfileActivity
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.EmergencyGroup
 import com.example.safefnow2.util.AlertHelper
@@ -35,6 +37,13 @@ class HomeActivity : ComponentActivity() {
         val tvInitials      = findViewById<TextView>(R.id.tvHomeAvatarInitials)
         val llGroupsStories = findViewById<LinearLayout>(R.id.llGroupsStories)
 
+        findViewById<LinearLayout>(R.id.navContacts).setOnClickListener {
+            startActivity(Intent(this, ContactsActivity::class.java))
+        }
+
+        // ── Avatar cliquable dans la top bar → ProfileActivity ───────────────
+        val avatarLayout = findViewById<FrameLayout>(R.id.avatarContainer)
+        avatarLayout?.setOnClickListener {
         // ── Avatar → ProfileActivity ──────────────────────────────────────────
         findViewById<FrameLayout>(R.id.avatarContainer)?.setOnClickListener {
             startActivity(Intent(this, ProfileActivity::class.java))
