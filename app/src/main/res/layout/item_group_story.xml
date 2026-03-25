@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:layout_marginEnd="14dp"
+    android:clickable="true"
+    android:focusable="true">
+
+    <FrameLayout
+        android:id="@+id/flStoryCircle"
+        android:layout_width="62dp"
+        android:layout_height="62dp"
+        android:layout_marginBottom="6dp"
+        android:duplicateParentState="true">
+
+        <FrameLayout
+            android:layout_width="62dp"
+            android:layout_height="62dp"
+            android:background="@drawable/circle_story_active"
+            android:duplicateParentState="true">
+
+            <FrameLayout
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:layout_gravity="center"
+                android:background="@drawable/circle_group_dark"
+                android:duplicateParentState="true">
+
+                <!-- Shows first 2 letters of group name -->
+                <TextView
+                    android:id="@+id/tvStoryInitials"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="G"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:duplicateParentState="true" />
+            </FrameLayout>
+        </FrameLayout>
+    </FrameLayout>
+
+    <!-- Group name (max 8 chars to fit) -->
+    <TextView
+        android:id="@+id/tvStoryGroupName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Groupe"
+        android:textColor="#111111"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:duplicateParentState="true" />
+
+</LinearLayout>

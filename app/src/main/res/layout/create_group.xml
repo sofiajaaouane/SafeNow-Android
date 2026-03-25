@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    tools:ignore="HardcodedText,SmallSp">
+
+    <!-- ── RED CURVED HEADER ── -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="160dp">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="130dp"
+            android:background="#CC0000" />
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:layout_alignParentBottom="true"
+            android:src="@drawable/header_curve"
+            android:scaleType="fitXY"
+            android:contentDescription="@null" />
+
+        <!-- Back arrow -->
+        <ImageButton
+            android:id="@+id/btnReturn"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="40dp"
+            android:background="@drawable/circle_white_20"
+            android:contentDescription="@string/back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="#D32F2F"
+            tools:ignore="TouchTargetSizeCheck" />
+
+        <!-- G circle centered -->
+        <TextView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:text="G"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#CC0000"
+            android:gravity="center"
+            android:background="@drawable/circle_white"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="30dp" />
+
+    </RelativeLayout>
+
+    <!-- ── FORM ── -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="20dp">
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Group name"
+                android:textSize="10sp"
+                android:textColor="#999999"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Title input -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:background="@drawable/input_field_bg"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="14dp"
+                android:layout_marginBottom="22dp">
+
+                <EditText
+                    android:id="@+id/etGroupTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:hint="Group name"
+                    android:textSize="15sp"
+                    android:textColor="#222222"
+                    android:textColorHint="#BBBBBB"
+                    android:inputType="text"
+                    android:importantForAutofill="no" />
+            </LinearLayout>
+
+            <!-- Description label -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DESCRIPTION"
+                android:textSize="10sp"
+                android:textColor="#999999"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Description input (multiline) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:background="@drawable/input_field_bg"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="10dp"
+                android:layout_marginBottom="22dp">
+
+                <EditText
+                    android:id="@+id/etGroupDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:hint="Add a description..."
+                    android:inputType="textMultiLine"
+                    android:gravity="top"
+                    android:textSize="15sp"
+                    android:textColor="#222222"
+                    android:textColorHint="#BBBBBB"
+                    android:importantForAutofill="no" />
+            </LinearLayout>
+
+            <!-- List of necessary label -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Essential items"
+                android:textSize="10sp"
+                android:textColor="#999999"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="8dp" />
+
+            <!-- List input with + button -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="54dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/input_field_bg"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="14dp"
+                    android:layout_marginEnd="10dp">
+
+                    <EditText
+                        android:id="@+id/etListItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/transparent"
+                        android:hint="Write item then press + or Enter"
+                        android:textSize="14sp"
+                        android:textColor="#222222"
+                        android:textColorHint="#BBBBBB"
+                        android:imeOptions="actionDone"
+                        android:inputType="text"
+                        android:importantForAutofill="no" />
+                </LinearLayout>
+
+                <!-- + button -->
+                <TextView
+                    android:id="@+id/btnAddItem"
+                    android:layout_width="54dp"
+                    android:layout_height="54dp"
+                    android:text="+"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:background="@drawable/btn_red_rounded"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>
+
+            <!-- ══════════════════════════════════════════════════════ -->
+            <!-- THIS IS THE NEW PART — items appear here dynamically  -->
+            <!-- after the user presses + or Enter                     -->
+            <!-- ══════════════════════════════════════════════════════ -->
+            <LinearLayout
+                android:id="@+id/llNecessities"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="20dp" />
+
+            <!-- CREATE GROUP button -->
+            <TextView
+                android:id="@+id/btnCreateGroup"
+                android:layout_width="220dp"
+                android:layout_height="54dp"
+                android:layout_gravity="center_horizontal"
+                android:text="Create group"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:gravity="center"
+                android:background="@drawable/btn_red_rounded"
+                android:layout_marginBottom="32dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
