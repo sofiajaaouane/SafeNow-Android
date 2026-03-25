@@ -1,4 +1,4 @@
-package com.example.safefnow2
+package com.example.safefnow2.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -11,7 +11,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import com.example.safefnow2.activity.LoginActivity
+import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.EmergencyGroup
 import com.example.safefnow2.data.local.entity.GroupMember
@@ -119,11 +119,11 @@ class CreateGroupActivity : ComponentActivity() {
 
 
                 val group = EmergencyGroup(
-                    idGroup     = groupId,
-                    name        = title,
+                    idGroup = groupId,
+                    name = title,
                     description = description.ifEmpty { null },
-                    sosGlobal   = 1,
-                    idAdmin     = userId
+                    sosGlobal = 1,
+                    idAdmin = userId
                 )
 
                 withContext(Dispatchers.IO) {
@@ -135,7 +135,7 @@ class CreateGroupActivity : ComponentActivity() {
                     groupMemberDao.insert(
                         GroupMember(
                             idGroup = groupId,
-                            idUser  = userId
+                            idUser = userId
                         )
                     )
 
@@ -143,11 +143,11 @@ class CreateGroupActivity : ComponentActivity() {
                     necessities.forEach { itemName ->
                         itemDao.insert(
                             Item(
-                                idItem      = UUID.randomUUID().toString(),
-                                type        = "necessity",
-                                name        = itemName,
+                                idItem = UUID.randomUUID().toString(),
+                                type = "necessity",
+                                name = itemName,
                                 description = null,
-                                idGroup     = groupId
+                                idGroup = groupId
                             )
                         )
                     }

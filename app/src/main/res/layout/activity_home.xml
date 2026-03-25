@@ -99,13 +99,15 @@
             android:paddingEnd="20dp"
             android:clipToPadding="false">
 
+            <!-- ══ ID ADDED — real groups loaded here dynamically ══ -->
             <LinearLayout
+                android:id="@+id/llGroupsStories"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
-                <!-- Ajouter groupe -->
+                <!-- Ajouter groupe — ID ADDED -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -113,11 +115,16 @@
                     android:gravity="center_horizontal"
                     android:layout_marginEnd="14dp">
 
+                    <!-- ══ ID ADDED on FrameLayout ══ -->
                     <FrameLayout
+                        android:id="@+id/btnAddGroup"
                         android:layout_width="58dp"
                         android:layout_height="58dp"
                         android:background="@drawable/circle_add_group"
-                        android:layout_marginBottom="6dp">
+                        android:layout_marginBottom="6dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        >
 
                         <ImageView
                             android:layout_width="20dp"
@@ -134,167 +141,8 @@
                         android:textSize="10sp" />
                 </LinearLayout>
 
-                <!-- Groupe 1 - Actif -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center_horizontal"
-                    android:layout_marginEnd="14dp">
-
-                    <FrameLayout
-                        android:layout_width="62dp"
-                        android:layout_height="62dp"
-                        android:layout_marginBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="62dp"
-                            android:layout_height="62dp"
-                            android:background="@drawable/circle_story_active">
-
-                            <FrameLayout
-                                android:layout_width="54dp"
-                                android:layout_height="54dp"
-                                android:layout_gravity="center"
-                                android:background="@drawable/circle_group_dark">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_gravity="center"
-                                    android:text="G1"
-                                    android:textColor="#FFFFFF"
-                                    android:textSize="14sp"
-                                    android:textStyle="bold" />
-                            </FrameLayout>
-                        </FrameLayout>
-                    </FrameLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Famille"
-                        android:textColor="#111111"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <!-- Groupe 2 - Actif -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center_horizontal"
-                    android:layout_marginEnd="14dp">
-
-                    <FrameLayout
-                        android:layout_width="62dp"
-                        android:layout_height="62dp"
-                        android:background="@drawable/circle_story_active"
-                        android:layout_marginBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:layout_gravity="center"
-                            android:background="@drawable/circle_group_dark2">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_gravity="center"
-                                android:text="G2"
-                                android:textColor="#FFFFFF"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-                        </FrameLayout>
-                    </FrameLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Travail"
-                        android:textColor="#111111"
-                        android:textSize="10sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <!-- Groupe 3 - Inactif -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center_horizontal"
-                    android:layout_marginEnd="14dp">
-
-                    <FrameLayout
-                        android:layout_width="62dp"
-                        android:layout_height="62dp"
-                        android:background="@drawable/circle_story_inactive"
-                        android:layout_marginBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:layout_gravity="center"
-                            android:background="@drawable/circle_group_gray">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_gravity="center"
-                                android:text="G3"
-                                android:textColor="#AAAAAA"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-                        </FrameLayout>
-                    </FrameLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Amis"
-                        android:textColor="#999999"
-                        android:textSize="10sp" />
-                </LinearLayout>
-
-                <!-- Groupe 4 - Inactif -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center_horizontal">
-
-                    <FrameLayout
-                        android:layout_width="62dp"
-                        android:layout_height="62dp"
-                        android:background="@drawable/circle_story_inactive"
-                        android:layout_marginBottom="6dp">
-
-                        <FrameLayout
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
-                            android:layout_gravity="center"
-                            android:background="@drawable/circle_group_gray">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_gravity="center"
-                                android:text="G4"
-                                android:textColor="#AAAAAA"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-                        </FrameLayout>
-                    </FrameLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Voisins"
-                        android:textColor="#999999"
-                        android:textSize="10sp" />
-                </LinearLayout>
+                <!-- Hardcoded groups REMOVED -->
+                <!-- Real groups are added here dynamically by HomeActivity.kt -->
 
             </LinearLayout>
         </HorizontalScrollView>
@@ -393,9 +241,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <!-- Divider top -->
-
-        <!-- Profil (actif) -->
+        <!-- Profil -->
         <LinearLayout
             android:id="@+id/navProfil"
             android:layout_width="0dp"
@@ -442,7 +288,7 @@
                 android:textSize="10sp" />
         </LinearLayout>
 
-        <!-- Alertes (avec badge) -->
+        <!-- Alertes -->
         <LinearLayout
             android:id="@+id/navAlertes"
             android:layout_width="0dp"
@@ -461,6 +307,7 @@
                     android:layout_height="22dp"
                     android:src="@drawable/ic_nav_notif" />
 
+                <!-- Badge rouge -->
                 <View
                     android:id="@+id/badgeNotif"
                     android:layout_width="8dp"
@@ -504,6 +351,7 @@
 
         <!-- Groupes -->
         <LinearLayout
+            android:id="@+id/navGroupes"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"

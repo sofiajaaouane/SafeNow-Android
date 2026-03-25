@@ -28,7 +28,7 @@
                 android:background="@drawable/circle_group_dark"
                 android:duplicateParentState="true">
 
-                <!-- Shows first 2 letters of group name -->
+
                 <TextView
                     android:id="@+id/tvStoryInitials"
                     android:layout_width="wrap_content"
@@ -43,7 +43,7 @@
         </FrameLayout>
     </FrameLayout>
 
-    <!-- Group name (max 8 chars to fit) -->
+
     <TextView
         android:id="@+id/tvStoryGroupName"
         android:layout_width="wrap_content"

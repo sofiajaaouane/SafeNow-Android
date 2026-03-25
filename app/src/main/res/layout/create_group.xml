@@ -9,7 +9,7 @@
     android:background="#FFFFFF"
     tools:ignore="HardcodedText,SmallSp">
 
-    <!-- ── RED CURVED HEADER ── -->
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="160dp">
@@ -27,7 +27,7 @@
             android:scaleType="fitXY"
             android:contentDescription="@null" />
 
-        <!-- Back arrow -->
+
         <ImageButton
             android:id="@+id/btnReturn"
             android:layout_width="40dp"
@@ -40,7 +40,7 @@
             app:tint="#D32F2F"
             tools:ignore="TouchTargetSizeCheck" />
 
-        <!-- G circle centered -->
+
         <TextView
             android:layout_width="50dp"
             android:layout_height="50dp"
@@ -110,7 +110,7 @@
                 android:letterSpacing="0.1"
                 android:layout_marginBottom="8dp" />
 
-            <!-- Description input (multiline) -->
+            <!-- Description input  -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="100dp"
@@ -188,10 +188,7 @@
                     android:focusable="true" />
             </LinearLayout>
 
-            <!-- ══════════════════════════════════════════════════════ -->
-            <!-- THIS IS THE NEW PART — items appear here dynamically  -->
-            <!-- after the user presses + or Enter                     -->
-            <!-- ══════════════════════════════════════════════════════ -->
+
             <LinearLayout
                 android:id="@+id/llNecessities"
                 android:layout_width="match_parent"
