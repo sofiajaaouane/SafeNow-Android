@@ -30,27 +30,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".activity.SignUpStep1Activity"
             android:exported="false"
             android:theme="@style/Theme.Safefnow2" />
-
         <activity
             android:name=".activity.SignUpStep2Activity"
             android:exported="false"
             android:theme="@style/Theme.Safefnow2" />
-
         <activity
             android:name=".activity.SignUpStep3Activity"
             android:exported="false"
             android:theme="@style/Theme.Safefnow2" />
-
         <activity
             android:name=".activity.PermissionsActivity"
             android:exported="false"
             android:theme="@style/Theme.Safefnow2" />
-
         <activity
             android:name=".activity.HomeActivity"
             android:exported="false"
@@ -62,8 +57,7 @@
         <activity
             android:name=".activity.ContactDetailsActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
-
+            android:theme="@style/Theme.Safefnow2" />
         <activity
             android:name=".ProfileActivity"
             android:exported="false"
@@ -86,6 +80,10 @@
             android:exported="false"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
+        <activity
+            android:name=".activity.NotificationsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
     </application>
 
 </manifest>

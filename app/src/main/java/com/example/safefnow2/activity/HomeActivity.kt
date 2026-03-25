@@ -3,6 +3,7 @@ package com.example.safefnow2.activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Switch
@@ -30,6 +31,7 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
+
         AlertHelper.ensureChannel(this)
 
         // ── Views ─────────────────────────────────────────────────────────────
@@ -50,9 +52,8 @@ class HomeActivity : ComponentActivity() {
         }
 
         // ── Profil nav → ProfileActivity ──────────────────────────────────────
-        findViewById<LinearLayout>(R.id.navProfil)?.setOnClickListener {
-            startActivity(Intent(this, ProfileActivity::class.java))
-        }
+        val navProfil = findViewById<LinearLayout>(R.id.navProfil)
+        navProfil?.setOnClickListener {
 
         // ── Groupes nav → MyGroupsActivity ────────────────────────────────────
         findViewById<LinearLayout>(R.id.navGroupes)?.setOnClickListener {
@@ -65,13 +66,22 @@ class HomeActivity : ComponentActivity() {
         }
 
         // ── Load user data + real groups ──────────────────────────────────────
+        val navAlertes = findViewById<LinearLayout>(R.id.navAlertes)
+        navAlertes?.setOnClickListener {
+            startActivity(Intent(this, NotificationsActivity::class.java))
+        }
+
         val userId = SessionManager.getCurrentUserId(this) ?: return
+
         scope.launch {
             val user = withContext(Dispatchers.IO) {
                 DatabaseProvider.get(this@HomeActivity).userDao().getById(userId)
             }
             user?.let {
+                // Affiche le prénom dans le "Bonjour,"
                 tvUserName.text = it.prenom
+
+                // Génère les initiales pour l'avatar
                 val initials = buildString {
                     it.prenom.firstOrNull()?.uppercaseChar()?.let { c -> append(c) }
                     it.nom.firstOrNull()?.uppercaseChar()?.let { c -> append(c) }
@@ -79,6 +89,24 @@ class HomeActivity : ComponentActivity() {
                 if (initials.isNotEmpty()) tvInitials.text = initials
                 loadGroupsStories(llGroupsStories, userId)
             }
+        }
+
+        checkPendingNotifications(userId)
+    }
+
+
+
+    private fun checkPendingNotifications(userId: String) {
+        scope.launch {
+            val count =
+                    withContext(Dispatchers.IO) {
+                        DatabaseProvider.get(this@HomeActivity).amitierDao().getPendingRequestsCount(
+                                userId
+                        )
+                    }
+
+            val badgeNotif = findViewById<View>(R.id.badgeNotif)
+            badgeNotif?.visibility = if (count > 0) View.VISIBLE else View.GONE
         }
     }
 
@@ -241,6 +269,7 @@ class HomeActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         val userId = SessionManager.getCurrentUserId(this) ?: return
+        checkPendingNotifications(userId)
         val llGroupsStories = findViewById<LinearLayout>(R.id.llGroupsStories)
         loadGroupsStories(llGroupsStories, userId)
     }
