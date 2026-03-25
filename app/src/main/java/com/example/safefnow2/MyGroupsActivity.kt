@@ -190,7 +190,8 @@ class MyGroupsActivity : ComponentActivity() {
         popupView.findViewById<TextView>(R.id.btnDeleteGroup).setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Supprimer le groupe")
-                .setMessage("Voulez-vous vraiment supprimer \"${group.name}\" ?")
+
+                    .setMessage("Voulez-vous vraiment supprimer \"${group.name}\" ?")
                 .setPositiveButton("Supprimer") { _, _ ->
                     scope.launch {
                         withContext(Dispatchers.IO) {

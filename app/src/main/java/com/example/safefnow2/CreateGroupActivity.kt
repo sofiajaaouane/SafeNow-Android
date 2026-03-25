@@ -1,5 +1,6 @@
 package com.example.safefnow2
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -10,6 +11,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import com.example.safefnow2.activity.LoginActivity
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.EmergencyGroup
 import com.example.safefnow2.data.local.entity.GroupMember
@@ -94,13 +96,25 @@ class CreateGroupActivity : ComponentActivity() {
 
             val userId = SessionManager.getCurrentUserId(this)
             if (userId == null) {
-                Toast.makeText(this, "Utilisateur introuvable", Toast.LENGTH_SHORT).show()
+                redirectToLogin()
                 return@setOnClickListener
             }
 
             val necessities = collectNecessities()
 
             scope.launch {
+                // Verify that the user still exists in the database
+                val userExists = withContext(Dispatchers.IO) {
+                    DatabaseProvider.get(this@CreateGroupActivity).userDao().getById(userId) != null
+                }
+
+                if (!userExists) {
+                    Toast.makeText(this@CreateGroupActivity, "Session expirée, veuillez vous reconnecter", Toast.LENGTH_LONG).show()
+                    SessionManager.clear(this@CreateGroupActivity)
+                    redirectToLogin()
+                    return@launch
+                }
+
                 val groupId = UUID.randomUUID().toString()
 
 
@@ -148,6 +162,13 @@ class CreateGroupActivity : ComponentActivity() {
                 finish()
             }
         }
+    }
+
+    private fun redirectToLogin() {
+        startActivity(Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
     }
 
 
