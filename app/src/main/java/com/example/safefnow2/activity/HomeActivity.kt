@@ -7,10 +7,15 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.safefnow2.R
 import com.example.safefnow2.ProfileActivity
 import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.ui.sos.SosUiEvent
+import com.example.safefnow2.ui.sos.SosViewModel
 import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.GroupPopupHelper
 import com.example.safefnow2.util.SessionManager
@@ -24,11 +29,34 @@ import kotlinx.coroutines.withContext
 class HomeActivity : AppCompatActivity() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val sosViewModel: SosViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
         AlertHelper.ensureChannel(this)
+
+        lifecycleScope.launch {
+            sosViewModel.events.collect { event ->
+                val message = when (event) {
+                    is SosUiEvent.Sent -> getString(R.string.toast_sos_sent)
+                    is SosUiEvent.PeerMissing -> getString(R.string.toast_sos_peer_missing)
+                    is SosUiEvent.Error -> event.message.ifEmpty { "Erreur SOS" }
+                }
+                Toast.makeText(this@HomeActivity, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        findViewById<FrameLayout>(R.id.btnHomeSos).setOnClickListener {
+            val userId = SessionManager.getCurrentUserId(this) ?: return@setOnClickListener
+            scope.launch {
+                val user = withContext(Dispatchers.IO) {
+                    DatabaseProvider.get(this@HomeActivity).userDao().getById(userId)
+                }
+                val name = user?.let { "${it.prenom} ${it.nom}".trim() }.orEmpty().ifEmpty { "SafeNow" }
+                sosViewModel.sendSos(name)
+            }
+        }
 
         val tvUserName      = findViewById<TextView>(R.id.tvHomeUserName)
         val tvInitials      = findViewById<TextView>(R.id.tvHomeAvatarInitials)
@@ -66,6 +94,9 @@ class HomeActivity : AppCompatActivity() {
                     it.nom.firstOrNull()?.uppercaseChar()?.let { c -> append(c) }
                 }
                 if (initials.isNotEmpty()) tvInitials.text = initials
+                sosViewModel.syncDeviceRegistration(
+                    "${it.prenom} ${it.nom}".trim().ifEmpty { "SafeNow" }
+                )
                 loadGroupsStories(llGroupsStories, userId)
             }
         }

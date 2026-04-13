@@ -1,4 +1,4 @@
-package com.example.safefnow2.activity
+    package com.example.safefnow2.activity
 
 import android.app.AlertDialog
 import android.os.Bundle

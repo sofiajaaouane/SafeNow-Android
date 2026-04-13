@@ -55,4 +55,15 @@
     <string name="error_prenom_required">Le prenom est obligatoire</string>
     <string name="error_phone_required">Le numero est obligatoire</string>
     <string name="logout">Deconnexion</string>
+
+    <!-- SOS Firebase / FCM -->
+    <string name="section_sos_fcm">Alerte SOS (Firebase)</string>
+    <string name="label_my_device_id">Mon ID appareil (partager avec le contact)</string>
+    <string name="label_peer_device_id">ID appareil du contact (SOS)</string>
+    <string name="hint_peer_device_id">Coller l identificateur recu du 2e telephone</string>
+    <string name="btn_save_peer_id">Enregistrer le contact SOS</string>
+    <string name="toast_peer_saved">Contact SOS enregistre</string>
+    <string name="toast_sos_sent">SOS envoye au contact</string>
+    <string name="toast_sos_peer_missing">Configurez l ID du contact dans Profil</string>
+    <string name="sos_notification_default_body">Alerte SOS recue</string>
 </resources>

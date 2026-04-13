@@ -19,6 +19,7 @@ import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.Disease
 import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.databinding.ActivityProfileBinding
+import com.example.safefnow2.data.SosDevicePrefs
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -91,8 +92,20 @@ class ProfileActivity : AppCompatActivity() {
         }
         currentUserId = userId
 
+        setupSosDeviceUi()
+
         loadUserProfile()
         setupListeners()
+    }
+
+    private fun setupSosDeviceUi() {
+        val sosPrefs = SosDevicePrefs(this)
+        binding.tvMyDeviceId.text = sosPrefs.getOrCreateDeviceId()
+        binding.etPeerDeviceId.setText(sosPrefs.getPeerDeviceId())
+        binding.btnSavePeerDevice.setOnClickListener {
+            sosPrefs.setPeerDeviceId(binding.etPeerDeviceId.text.toString())
+            Toast.makeText(this, R.string.toast_peer_saved, Toast.LENGTH_SHORT).show()
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

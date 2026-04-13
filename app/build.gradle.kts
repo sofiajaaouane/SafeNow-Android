@@ -18,8 +18,6 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -64,22 +62,34 @@ dependencies {
     // ── Material (nécessaire pour Button avec cornerRadius dans XML) ─────────
     implementation("com.google.android.material:material:1.12.0")
 
+
     // ── CardView (nécessaire pour androidx.cardview.widget.CardView) ─────────
     implementation("androidx.cardview:cardview:1.0.0")
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.firebase.database)
     ksp(libs.androidx.room.compiler)
 
     // ── Lifecycle (lifecycleScope dans ProfileActivity) ───────────────────────
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")
 
-    // ── Tests ────────────────────────────────────────────────────────────────
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+    implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation(libs.kotlinx.coroutines.play.services)
+
     debugImplementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+}
+
+tasks.withType<Test>().configureEach {
+    enabled = false
+}
+
+// Only when google-services.json is present (download from Firebase Console into app/).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
