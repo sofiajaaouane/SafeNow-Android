@@ -1,13 +1,9 @@
 package com.example.safefnow2
 
 import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.net.Uri
 import android.os.Bundle
-import android.os.PowerManager
-import android.provider.Settings
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
 import android.view.LayoutInflater
@@ -26,10 +22,7 @@ import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
 import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.databinding.ActivityProfileBinding
-import com.example.safefnow2.data.SosDevicePrefs
 import com.example.safefnow2.data.remote.SosRepository
-import com.example.safefnow2.service.AlwaysListenPrefs
-import com.example.safefnow2.service.AlwaysListenService
 import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
@@ -109,57 +102,8 @@ class ProfileActivity : AppCompatActivity() {
         }
         currentUserId = userId
 
-        setupSosDeviceUi()
-        setupAlwaysListenUi()
-
         loadUserProfile()
         setupListeners()
-    }
-
-    private fun setupSosDeviceUi() {
-        val sosPrefs = SosDevicePrefs(this)
-        binding.tvMyDeviceId.text = sosPrefs.getOrCreateDeviceId()
-        binding.etPeerDeviceId.setText(sosPrefs.getPeerDeviceId())
-        binding.btnSavePeerDevice.setOnClickListener {
-            sosPrefs.setPeerDeviceId(binding.etPeerDeviceId.text.toString())
-            sosPrefs.clearPeerPhoneHint()
-            Toast.makeText(this, R.string.toast_peer_saved, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun setupAlwaysListenUi() {
-        val prefs = AlwaysListenPrefs(this)
-        binding.switchAlwaysListen.isChecked = prefs.isEnabled()
-
-        binding.switchAlwaysListen.setOnCheckedChangeListener { _, enabled ->
-            prefs.setEnabled(enabled)
-            if (enabled) AlwaysListenService.start(this) else AlwaysListenService.stop(this)
-        }
-
-        binding.btnBatteryOpt.setOnClickListener {
-            requestDisableBatteryOptimization()
-        }
-    }
-
-    private fun requestDisableBatteryOptimization() {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
-            startActivity(Intent(Settings.ACTION_SETTINGS))
-            return
-        }
-        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        val pkg = packageName
-        if (pm.isIgnoringBatteryOptimizations(pkg)) {
-            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-            return
-        }
-        runCatching {
-            val i = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                data = Uri.parse("package:$pkg")
-            }
-            startActivity(i)
-        }.onFailure {
-            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
