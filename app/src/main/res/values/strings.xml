@@ -64,6 +64,16 @@
     <string name="btn_save_peer_id">Enregistrer le contact SOS</string>
     <string name="toast_peer_saved">Contact SOS enregistre</string>
     <string name="toast_sos_sent">SOS envoye au contact</string>
-    <string name="toast_sos_peer_missing">Configurez l ID du contact dans Profil</string>
+    <string name="toast_sos_peer_missing">Choisissez un destinataire SOS (Profil ou contact)</string>
+    <string name="toast_sos_contact_no_device">Ce numero n est pas enregistre sur un autre appareil SafeNow</string>
     <string name="sos_notification_default_body">Alerte SOS recue</string>
+    <string name="sos_notification_body_from_sender">%1$s declenche une alerte SOS</string>
+    <string name="section_sos_history">Historique SOS</string>
+    <string name="sos_history_empty">Aucun SOS enregistre (ouvrez l app apres connexion pour synchroniser votre numero)</string>
+    <string name="sos_history_role_sent">Envoye vers</string>
+    <string name="sos_history_role_received">Recu de</string>
+    <string name="btn_set_sos_recipient">Definir comme destinataire SOS</string>
+    <string name="toast_sos_recipient_set">Destinataire SOS enregistre</string>
+    <string name="contact_sos_status_linked">Appareil trouve pour ce numero</string>
+    <string name="contact_sos_status_missing">Aucun appareil pour ce numero (l autre telephone doit ouvrir l app)</string>
 </resources>

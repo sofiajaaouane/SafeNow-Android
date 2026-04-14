@@ -41,7 +41,10 @@ class HomeActivity : AppCompatActivity() {
                 val message = when (event) {
                     is SosUiEvent.Sent -> getString(R.string.toast_sos_sent)
                     is SosUiEvent.PeerMissing -> getString(R.string.toast_sos_peer_missing)
-                    is SosUiEvent.Error -> event.message.ifEmpty { "Erreur SOS" }
+                    is SosUiEvent.Error -> when (event.message) {
+                        "contact_device_unknown" -> getString(R.string.toast_sos_contact_no_device)
+                        else -> event.message.ifEmpty { "Erreur SOS" }
+                    }
                 }
                 Toast.makeText(this@HomeActivity, message, Toast.LENGTH_SHORT).show()
             }
@@ -95,7 +98,9 @@ class HomeActivity : AppCompatActivity() {
                 }
                 if (initials.isNotEmpty()) tvInitials.text = initials
                 sosViewModel.syncDeviceRegistration(
-                    "${it.prenom} ${it.nom}".trim().ifEmpty { "SafeNow" }
+                    displayName = "${it.prenom} ${it.nom}".trim().ifEmpty { "SafeNow" },
+                    phone = it.numTel,
+                    appUserId = it.idUser
                 )
                 loadGroupsStories(llGroupsStories, userId)
             }

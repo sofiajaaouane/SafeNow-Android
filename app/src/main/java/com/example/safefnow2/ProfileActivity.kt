@@ -20,6 +20,7 @@ import com.example.safefnow2.data.local.entity.Disease
 import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.databinding.ActivityProfileBinding
 import com.example.safefnow2.data.SosDevicePrefs
+import com.example.safefnow2.data.remote.SosRepository
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,6 +35,7 @@ class ProfileActivity : AppCompatActivity() {
     // ── DAOs via DatabaseProvider ────────────────────────────────────────────
     private val userDao by lazy { DatabaseProvider.get(this).userDao() }
     private val diseaseDao by lazy { DatabaseProvider.get(this).diseaseDao() }
+    private val sosRepository by lazy { SosRepository(this) }
 
     // ── ID du user connecté ──────────────────────────────────────────────────
     private lateinit var currentUserId: String
@@ -104,6 +106,7 @@ class ProfileActivity : AppCompatActivity() {
         binding.etPeerDeviceId.setText(sosPrefs.getPeerDeviceId())
         binding.btnSavePeerDevice.setOnClickListener {
             sosPrefs.setPeerDeviceId(binding.etPeerDeviceId.text.toString())
+            sosPrefs.clearPeerPhoneHint()
             Toast.makeText(this, R.string.toast_peer_saved, Toast.LENGTH_SHORT).show()
         }
     }
@@ -322,6 +325,15 @@ class ProfileActivity : AppCompatActivity() {
                 binding.etPassword.transformationMethod =
                     PasswordTransformationMethod.getInstance()
                 Toast.makeText(this@ProfileActivity, "Profil mis a jour", Toast.LENGTH_SHORT).show()
+                lifecycleScope.launch(Dispatchers.IO) {
+                    runCatching {
+                        sosRepository.syncMyDeviceToCloud(
+                            "${updatedUser.prenom} ${updatedUser.nom}".trim().ifEmpty { "SafeNow" },
+                            updatedUser.numTel,
+                            updatedUser.idUser
+                        )
+                    }
+                }
             }
         }
     }

@@ -27,12 +27,19 @@ class SafeNowFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         AlertHelper.ensureChannel(this)
+        val senderName = message.data["senderName"]?.trim().orEmpty()
         val title = message.notification?.title
             ?: message.data["title"]
-            ?: "SOS"
-        val body = message.notification?.body
-            ?: message.data["body"]
-            ?: getString(com.example.safefnow2.R.string.sos_notification_default_body)
+            ?: "SOS SafeNow"
+        val body = when {
+            senderName.isNotEmpty() -> getString(
+                com.example.safefnow2.R.string.sos_notification_body_from_sender,
+                senderName
+            )
+            else -> message.notification?.body
+                ?: message.data["body"]
+                ?: getString(com.example.safefnow2.R.string.sos_notification_default_body)
+        }
         AlertHelper.showAlertNotification(this, title, body, message.hashCode())
         AlertHelper.vibrate(this)
     }

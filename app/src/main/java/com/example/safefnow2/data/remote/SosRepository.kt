@@ -14,15 +14,31 @@ class SosRepository(context: Context) {
     private val firestore = FirebaseFirestore.getInstance()
     private val prefs = SosDevicePrefs(appContext)
 
-    suspend fun syncMyDeviceToCloud(displayName: String) {
+    private fun normalizePhoneDigits(phone: String): String =
+        phone.filter { it.isDigit() }
+
+    suspend fun syncMyDeviceToCloud(displayName: String, phone: String, appUserId: String) {
         val token = FirebaseMessaging.getInstance().token.await()
         val deviceId = prefs.getOrCreateDeviceId()
+        val digits = normalizePhoneDigits(phone)
+        prefs.rememberSyncedPhone(phone)
         val data = hashMapOf(
             "fcmToken" to token,
             "displayName" to displayName,
+            "phone" to phone.trim(),
+            "phoneDigits" to digits,
+            "appUserId" to appUserId,
             "updatedAt" to FieldValue.serverTimestamp()
         )
         firestore.collection("devices").document(deviceId).set(data, SetOptions.merge()).await()
+        if (digits.isNotEmpty()) {
+            val index = hashMapOf(
+                "deviceId" to deviceId,
+                "displayName" to displayName,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+            firestore.collection("phone_index").document(digits).set(index, SetOptions.merge()).await()
+        }
     }
 
     suspend fun updateFcmTokenOnly(token: String) {
@@ -34,10 +50,44 @@ class SosRepository(context: Context) {
         firestore.collection("devices").document(deviceId).set(patch, SetOptions.merge()).await()
     }
 
+    suspend fun lookupDeviceIdByPhone(phone: String): String? {
+        val digits = normalizePhoneDigits(phone)
+        if (digits.isEmpty()) return null
+        val snap = firestore.collection("phone_index").document(digits).get().await()
+        if (!snap.exists()) return null
+        return snap.getString("deviceId")?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
     suspend fun sendSosToPeer(senderDisplayName: String) {
-        val myId = prefs.getOrCreateDeviceId()
         val targetId = prefs.getPeerDeviceId()
         if (targetId.isBlank()) {
+            throw IllegalStateException("peer_missing")
+        }
+        val hintDigits = prefs.getPeerPhoneDigits().ifBlank { null }
+        val hintName = prefs.getPeerDisplayName().ifBlank { null }
+        sendSosToTarget(targetId, senderDisplayName, hintDigits, hintName)
+    }
+
+    suspend fun sendSosToContactPhone(
+        contactPhone: String,
+        senderDisplayName: String,
+        contactDisplayName: String
+    ) {
+        val targetId = lookupDeviceIdByPhone(contactPhone)
+            ?: throw IllegalStateException("contact_device_unknown")
+        val digits = normalizePhoneDigits(contactPhone)
+        sendSosToTarget(targetId, senderDisplayName, digits, contactDisplayName)
+    }
+
+    suspend fun sendSosToTarget(
+        targetDeviceId: String,
+        senderDisplayName: String,
+        targetPhoneDigitsHint: String?,
+        targetDisplayNameHint: String?
+    ) {
+        val myId = prefs.getOrCreateDeviceId()
+        val targetId = targetDeviceId.trim()
+        if (targetId.isEmpty()) {
             throw IllegalStateException("peer_missing")
         }
         val request = hashMapOf(
@@ -46,6 +96,94 @@ class SosRepository(context: Context) {
             "senderName" to senderDisplayName,
             "createdAt" to FieldValue.serverTimestamp()
         )
-        firestore.collection("sos_requests").add(request).await()
+        val ref = firestore.collection("sos_requests").add(request).await()
+        val requestId = ref.id
+        writeSosHistoryForBothParties(
+            requestId = requestId,
+            senderDeviceId = myId,
+            targetDeviceId = targetId,
+            senderDisplayName = senderDisplayName,
+            targetPhoneDigitsHint = targetPhoneDigitsHint,
+            targetDisplayNameHint = targetDisplayNameHint
+        )
+    }
+
+    private suspend fun writeSosHistoryForBothParties(
+        requestId: String,
+        senderDeviceId: String,
+        targetDeviceId: String,
+        senderDisplayName: String,
+        targetPhoneDigitsHint: String?,
+        targetDisplayNameHint: String?
+    ) {
+        var senderDigits = prefs.getMyPhoneDigits()
+        if (senderDigits.isEmpty()) {
+            val sDoc = firestore.collection("devices").document(senderDeviceId).get().await()
+            senderDigits = sDoc.getString("phoneDigits")
+                ?: normalizePhoneDigits(sDoc.getString("phone") ?: "")
+        }
+        var targetDigits = targetPhoneDigitsHint?.filter { it.isDigit() } ?: ""
+        var targetName = targetDisplayNameHint
+        if (targetDigits.isEmpty() || targetName.isNullOrBlank()) {
+            val tDoc = firestore.collection("devices").document(targetDeviceId).get().await()
+            if (tDoc.exists()) {
+                if (targetDigits.isEmpty()) {
+                    targetDigits = tDoc.getString("phoneDigits")
+                        ?: normalizePhoneDigits(tDoc.getString("phone") ?: "")
+                }
+                if (targetName.isNullOrBlank()) {
+                    targetName = tDoc.getString("displayName") ?: ""
+                }
+            }
+        }
+        if (senderDigits.isEmpty() || targetDigits.isEmpty()) {
+            return
+        }
+        val sent = hashMapOf(
+            "ownerPhoneDigits" to senderDigits,
+            "role" to "sent",
+            "peerPhoneDigits" to targetDigits,
+            "peerDisplayName" to (targetName ?: ""),
+            "peerDeviceId" to targetDeviceId,
+            "requestId" to requestId,
+            "createdAt" to FieldValue.serverTimestamp()
+        )
+        val received = hashMapOf(
+            "ownerPhoneDigits" to targetDigits,
+            "role" to "received",
+            "peerPhoneDigits" to senderDigits,
+            "peerDisplayName" to senderDisplayName,
+            "peerDeviceId" to senderDeviceId,
+            "requestId" to requestId,
+            "createdAt" to FieldValue.serverTimestamp()
+        )
+        firestore.collection("sos_history").document("${requestId}_sender").set(sent).await()
+        firestore.collection("sos_history").document("${requestId}_receiver").set(received).await()
+    }
+
+    suspend fun loadSosHistoryForMyPhone(): List<SosHistoryEntry> {
+        val digits = prefs.getMyPhoneDigits()
+        if (digits.isEmpty()) return emptyList()
+        val snap = firestore.collection("sos_history")
+            .whereEqualTo("ownerPhoneDigits", digits)
+            .get()
+            .await()
+        return snap.documents.map { doc ->
+            SosHistoryEntry(
+                requestId = doc.getString("requestId") ?: doc.id,
+                role = doc.getString("role") ?: "",
+                peerDisplayName = doc.getString("peerDisplayName") ?: "",
+                peerPhoneDigits = doc.getString("peerPhoneDigits") ?: "",
+                createdAtMillis = doc.getTimestamp("createdAt")?.toDate()?.time ?: 0L
+            )
+        }.sortedByDescending { it.createdAtMillis }
     }
 }
+
+data class SosHistoryEntry(
+    val requestId: String,
+    val role: String,
+    val peerDisplayName: String,
+    val peerPhoneDigits: String,
+    val createdAtMillis: Long
+)

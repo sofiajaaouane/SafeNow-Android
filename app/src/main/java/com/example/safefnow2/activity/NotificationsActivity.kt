@@ -11,12 +11,20 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.safefnow2.R
+import com.example.safefnow2.data.remote.SosHistoryEntry
+import com.example.safefnow2.data.remote.SosRepository
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.dao.AmitierDao
 import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.util.SessionManager
-import kotlinx.coroutines.runBlocking
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class NotificationsActivity : AppCompatActivity() {
 
@@ -27,6 +35,9 @@ class NotificationsActivity : AppCompatActivity() {
     private lateinit var scrollView: ScrollView
     private lateinit var tvRequestCount: TextView
     private lateinit var btnBack: ImageView
+    private lateinit var llSosHistory: LinearLayout
+    private lateinit var tvSosHistoryEmpty: TextView
+    private lateinit var progressSosHistory: ProgressBar
 
     private var currentUserId: String = ""
 
@@ -46,7 +57,14 @@ class NotificationsActivity : AppCompatActivity() {
         amitierDao = database.amitierDao()
 
         initViews()
-        loadPendingRequests()
+        loadAll()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (currentUserId.isNotEmpty()) {
+            loadAll()
+        }
     }
 
     private fun initViews() {
@@ -56,48 +74,76 @@ class NotificationsActivity : AppCompatActivity() {
         scrollView = findViewById(R.id.scrollView)
         tvRequestCount = findViewById(R.id.tvRequestCount)
         btnBack = findViewById(R.id.btnBack)
+        llSosHistory = findViewById(R.id.llSosHistory)
+        tvSosHistoryEmpty = findViewById(R.id.tvSosHistoryEmpty)
+        progressSosHistory = findViewById(R.id.progressSosHistory)
 
         btnBack.setOnClickListener { finish() }
     }
 
-    private fun loadPendingRequests() {
+    private fun loadAll() {
         progressBar.visibility = View.VISIBLE
         scrollView.visibility = View.GONE
-        emptyStateLayout.visibility = View.GONE
 
-        Thread {
-            val users =
-                    runBlocking {
-                        amitierDao.getPendingReceivedRequests(currentUserId)
-                    }
+        lifecycleScope.launch(Dispatchers.IO) {
+            val users = amitierDao.getPendingReceivedRequests(currentUserId)
+            val history = runCatching { SosRepository(this@NotificationsActivity).loadSosHistoryForMyPhone() }
+                .getOrElse { emptyList() }
 
-            runOnUiThread {
-                displayRequests(users)
+            withContext(Dispatchers.Main) {
                 progressBar.visibility = View.GONE
+                scrollView.visibility = View.VISIBLE
+                displayRequests(users)
+                displaySosHistory(history)
             }
-        }.start()
+        }
     }
 
     private fun displayRequests(requests: List<User>) {
         requestsContainer.removeAllViews()
 
         if (requests.isEmpty()) {
-            scrollView.visibility = View.GONE
             emptyStateLayout.visibility = View.VISIBLE
             tvRequestCount.visibility = View.GONE
         } else {
-            scrollView.visibility = View.VISIBLE
             emptyStateLayout.visibility = View.GONE
             tvRequestCount.visibility = View.VISIBLE
             tvRequestCount.text = requests.size.toString()
-
             requests.forEach { user -> requestsContainer.addView(createRequestItem(user)) }
+        }
+    }
+
+    private fun displaySosHistory(entries: List<SosHistoryEntry>) {
+        llSosHistory.removeAllViews()
+        progressSosHistory.visibility = View.GONE
+
+        if (entries.isEmpty()) {
+            tvSosHistoryEmpty.visibility = View.VISIBLE
+        } else {
+            tvSosHistoryEmpty.visibility = View.GONE
+            val fmt = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            entries.forEach { e ->
+                val row = LayoutInflater.from(this).inflate(R.layout.item_sos_history, llSosHistory, false)
+                val roleLabel = when (e.role) {
+                    "sent" -> getString(R.string.sos_history_role_sent)
+                    "received" -> getString(R.string.sos_history_role_received)
+                    else -> e.role
+                }
+                row.findViewById<TextView>(R.id.tvSosHistoryRole).text = roleLabel
+                row.findViewById<TextView>(R.id.tvSosHistoryPeer).text =
+                    e.peerDisplayName.ifEmpty { "—" }
+                row.findViewById<TextView>(R.id.tvSosHistoryPhone).text =
+                    if (e.peerPhoneDigits.isNotEmpty()) e.peerPhoneDigits else ""
+                row.findViewById<TextView>(R.id.tvSosHistoryRequestId).text =
+                    "ID: ${e.requestId} · ${fmt.format(Date(e.createdAtMillis))}"
+                llSosHistory.addView(row)
+            }
         }
     }
 
     private fun createRequestItem(user: User): View {
         val itemView =
-                LayoutInflater.from(this).inflate(R.layout.item_friend_request, requestsContainer, false)
+            LayoutInflater.from(this).inflate(R.layout.item_friend_request, requestsContainer, false)
 
         val tvInitials: TextView = itemView.findViewById(R.id.tvInitials)
         val tvName: TextView = itemView.findViewById(R.id.tvName)
@@ -109,10 +155,10 @@ class NotificationsActivity : AppCompatActivity() {
         val p = user.prenom.firstOrNull()
         val n = user.nom.firstOrNull()
         tvInitials.text =
-                buildString {
-                    if (p != null) append(p.uppercaseChar())
-                    if (n != null) append(n.uppercaseChar())
-                }
+            buildString {
+                if (p != null) append(p.uppercaseChar())
+                if (n != null) append(n.uppercaseChar())
+            }
 
         tvName.text = "${user.prenom} ${user.nom}"
         tvPhone.text = user.numTel
@@ -129,22 +175,22 @@ class NotificationsActivity : AppCompatActivity() {
     }
 
     private fun acceptRequest(user: User) {
-        Thread {
-            runBlocking { amitierDao.acceptRequest(user.idUser, currentUserId) }
-            runOnUiThread {
-                Toast.makeText(this, "Ami ajouté", Toast.LENGTH_SHORT).show()
-                loadPendingRequests()
+        lifecycleScope.launch(Dispatchers.IO) {
+            amitierDao.acceptRequest(user.idUser, currentUserId)
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@NotificationsActivity, "Ami ajouté", Toast.LENGTH_SHORT).show()
+                loadAll()
             }
-        }.start()
+        }
     }
 
     private fun rejectRequest(user: User) {
-        Thread {
-            runBlocking { amitierDao.rejectRequest(user.idUser, currentUserId) }
-            runOnUiThread {
-                Toast.makeText(this, "Invitation refusée", Toast.LENGTH_SHORT).show()
-                loadPendingRequests()
+        lifecycleScope.launch(Dispatchers.IO) {
+            amitierDao.rejectRequest(user.idUser, currentUserId)
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@NotificationsActivity, "Invitation refusée", Toast.LENGTH_SHORT).show()
+                loadAll()
             }
-        }.start()
+        }
     }
 }

@@ -5,6 +5,12 @@ service cloud.firestore {
     match /devices/{deviceId} {
       allow read, write: if true;
     }
+    match /phone_index/{phoneKey} {
+      allow read, write: if true;
+    }
+    match /sos_history/{entryId} {
+      allow read, write: if true;
+    }
     match /sos_requests/{requestId} {
       allow create: if true;
       allow read, update, delete: if false;

@@ -1,18 +1,26 @@
-    package com.example.safefnow2.activity
+package com.example.safefnow2.activity
 
 import android.app.AlertDialog
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.safefnow2.R
+import com.example.safefnow2.data.SosDevicePrefs
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.Disease
 import com.example.safefnow2.data.local.entity.User
+import com.example.safefnow2.data.remote.SosRepository
+import com.example.safefnow2.ui.sos.SosUiEvent
+import com.example.safefnow2.ui.sos.SosViewModel
+import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,8 +31,11 @@ class ContactDetailsActivity : ComponentActivity() {
         const val EXTRA_CONTACT_USER_ID = "extra_contact_user_id"
     }
 
+    private val sosViewModel: SosViewModel by viewModels()
+
     private var contactUser: User? = null
     private var contactDiseases: List<Disease> = emptyList()
+    private var resolvedPeerDeviceId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,9 +45,26 @@ class ContactDetailsActivity : ComponentActivity() {
         val tvContactName = findViewById<TextView>(R.id.tvContactName)
         val tvContactPhone = findViewById<TextView>(R.id.tvContactPhone)
         val tvContactEmail = findViewById<TextView>(R.id.tvContactEmail)
+        val tvSosDeviceStatus = findViewById<TextView>(R.id.tvSosDeviceStatus)
+        val btnSetSosRecipient = findViewById<TextView>(R.id.btnSetSosRecipient)
+        val btnContactSos = findViewById<FrameLayout>(R.id.btnContactSos)
         val btnInfo = findViewById<Button>(R.id.contactInfoButton)
 
         backButton.setOnClickListener { finish() }
+
+        lifecycleScope.launch {
+            sosViewModel.events.collect { event ->
+                val message = when (event) {
+                    is SosUiEvent.Sent -> getString(R.string.toast_sos_sent)
+                    is SosUiEvent.PeerMissing -> getString(R.string.toast_sos_peer_missing)
+                    is SosUiEvent.Error -> when (event.message) {
+                        "contact_device_unknown" -> getString(R.string.toast_sos_contact_no_device)
+                        else -> event.message.ifEmpty { "Erreur SOS" }
+                    }
+                }
+                Toast.makeText(this@ContactDetailsActivity, message, Toast.LENGTH_SHORT).show()
+            }
+        }
 
         val contactUserId = intent.getStringExtra(EXTRA_CONTACT_USER_ID)
         if (contactUserId == null) {
@@ -46,6 +74,33 @@ class ContactDetailsActivity : ComponentActivity() {
 
         val db = DatabaseProvider.get(this)
         btnInfo.setOnClickListener { showContactInfoDialog() }
+
+        btnSetSosRecipient.setOnClickListener {
+            val id = resolvedPeerDeviceId
+            val user = contactUser
+            if (id.isNullOrBlank() || user == null) {
+                Toast.makeText(this, R.string.toast_sos_contact_no_device, Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val prefs = SosDevicePrefs(this)
+            prefs.setPeerDeviceId(id)
+            val digits = user.numTel.filter { it.isDigit() }
+            prefs.setPeerPhoneDigits(digits)
+            prefs.setPeerDisplayName("${user.prenom} ${user.nom}".trim())
+            Toast.makeText(this, R.string.toast_sos_recipient_set, Toast.LENGTH_SHORT).show()
+        }
+
+        btnContactSos.setOnClickListener {
+            val user = contactUser ?: return@setOnClickListener
+            val selfId = SessionManager.getCurrentUserId(this) ?: return@setOnClickListener
+            lifecycleScope.launch {
+                val self = withContext(Dispatchers.IO) { db.userDao().getById(selfId) }
+                val senderName = self?.let { "${it.prenom} ${it.nom}".trim() }.orEmpty()
+                    .ifEmpty { "SafeNow" }
+                val contactLabel = "${user.prenom} ${user.nom}".trim()
+                sosViewModel.sendSosToContactPhone(user.numTel, senderName, contactLabel)
+            }
+        }
 
         lifecycleScope.launch {
             val user = withContext(Dispatchers.IO) { db.userDao().getById(contactUserId) }
@@ -68,6 +123,20 @@ class ContactDetailsActivity : ComponentActivity() {
             } else {
                 tvContactEmail.text = email
                 tvContactEmail.visibility = View.VISIBLE
+            }
+
+            tvSosDeviceStatus.text = getString(R.string.contact_sos_status_missing)
+            withContext(Dispatchers.IO) {
+                val repo = SosRepository(this@ContactDetailsActivity)
+                val deviceId = runCatching { repo.lookupDeviceIdByPhone(user.numTel) }.getOrNull()
+                withContext(Dispatchers.Main) {
+                    resolvedPeerDeviceId = deviceId
+                    tvSosDeviceStatus.text = if (deviceId.isNullOrBlank()) {
+                        getString(R.string.contact_sos_status_missing)
+                    } else {
+                        getString(R.string.contact_sos_status_linked)
+                    }
+                }
             }
         }
     }
@@ -109,7 +178,7 @@ class ContactDetailsActivity : ComponentActivity() {
             diseases.forEach { disease ->
                 val diseaseTv = TextView(this).apply {
                     text = disease.name
-                    setTextColor(0xFF111111111.toInt())
+                    setTextColor(0xFF111111.toInt())
                     textSize = 14f
                     setPadding(0, 6, 0, 0)
                 }
@@ -122,4 +191,3 @@ class ContactDetailsActivity : ComponentActivity() {
         dialog.show()
     }
 }
-
