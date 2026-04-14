@@ -73,6 +73,15 @@
             android:name=".activity.NotificationsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".activity.SosIncomingActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
         <service
             android:name=".fcm.SafeNowFirebaseMessagingService"
             android:exported="false">

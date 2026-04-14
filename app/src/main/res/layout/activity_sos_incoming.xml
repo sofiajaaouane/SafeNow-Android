@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center"
+    android:background="#B3000000">
+
+    <TextView
+        android:id="@+id/tvSosIncomingTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="SOS"
+        android:textStyle="bold"
+        android:textSize="40sp"
+        android:textColor="@android:color/white" />
+
+    <TextView
+        android:id="@+id/tvSosIncomingSenderLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="From:"
+        android:textSize="18sp"
+        android:textColor="@android:color/white" />
+
+    <TextView
+        android:id="@+id/tvSosIncomingSender"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="SafeNow"
+        android:textStyle="bold"
+        android:textSize="22sp"
+        android:textColor="@android:color/white" />
+
+    <TextView
+        android:id="@+id/btnSosIncomingStop"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginTop="28dp"
+        android:gravity="center"
+        android:text="STOP"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="@android:color/white"
+        android:background="#D32F2F" />
+
+</LinearLayout>
+

@@ -27,6 +27,7 @@ class SafeNowFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         AlertHelper.ensureChannel(this)
+        val type = message.data["type"]?.trim().orEmpty()
         val senderName = message.data["senderName"]?.trim().orEmpty()
         val title = message.notification?.title
             ?: message.data["title"]
@@ -40,7 +41,11 @@ class SafeNowFirebaseMessagingService : FirebaseMessagingService() {
                 ?: message.data["body"]
                 ?: getString(com.example.safefnow2.R.string.sos_notification_default_body)
         }
-        AlertHelper.showAlertNotification(this, title, body, message.hashCode())
+        if (type == "SOS") {
+            AlertHelper.showSosFullScreen(this, title, body, senderName, message.hashCode())
+        } else {
+            AlertHelper.showAlertNotification(this, title, body, message.hashCode())
+        }
         AlertHelper.vibrate(this)
     }
 }

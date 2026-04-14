@@ -1,7 +1,7 @@
-const {onDocumentCreated} = require("firebase-functions/v2/firestore");
-const {initializeApp} = require("firebase-admin/app");
-const {getFirestore} = require("firebase-admin/firestore");
-const {getMessaging} = require("firebase-admin/messaging");
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 
 initializeApp();
 
@@ -34,6 +34,10 @@ exports.sendSosFcm = onDocumentCreated("sos_requests/{requestId}", async (event)
     },
     android: {
       priority: "high",
+      notification: {
+        channelId: "safenow_sos",
+        sound: "default",
+      },
     },
   });
 });
