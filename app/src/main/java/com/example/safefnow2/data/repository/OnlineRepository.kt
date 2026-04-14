@@ -48,6 +48,16 @@ class OnlineRepository(
         syncRepo.syncNow(user.idUser)
     }
 
+    suspend fun ensureDeviceId(userId: String, deviceId: String) {
+        if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
+        if (deviceId.isEmpty()) return
+        val currentSnap = rtdb.get(RtdbPaths.userDeviceId(userId))
+        val current = currentSnap.getValue(String::class.java).orEmpty()
+        if (current != deviceId) {
+            rtdb.setValue(RtdbPaths.userDeviceId(userId), deviceId)
+        }
+    }
+
     suspend fun deleteAccount(userId: String) {
         if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
         val phone = database.userDao().getById(userId)?.numTel

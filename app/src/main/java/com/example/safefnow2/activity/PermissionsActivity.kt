@@ -18,6 +18,7 @@ import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
 import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.util.ConnectivityObserver
+import com.example.safefnow2.util.DeviceIdProvider
 import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
@@ -157,6 +158,9 @@ class PermissionsActivity : ComponentActivity() {
             if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
                 Toast.makeText(this@PermissionsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
                 return@launch
+            }
+            runCatching {
+                onlineRepo.ensureDeviceId(idUser, DeviceIdProvider.getDeviceId(this@PermissionsActivity))
             }
             SessionManager.setCurrentUserId(this@PermissionsActivity, idUser)
             startActivity(

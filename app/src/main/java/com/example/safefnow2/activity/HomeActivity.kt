@@ -14,12 +14,16 @@ import androidx.lifecycle.lifecycleScope
 import com.example.safefnow2.R
 import com.example.safefnow2.ProfileActivity
 import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.data.sync.SyncScheduler
 import com.example.safefnow2.ui.sos.SosUiEvent
 import com.example.safefnow2.ui.sos.SosViewModel
 import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.ConnectivityObserver
+import com.example.safefnow2.util.DeviceIdProvider
 import com.example.safefnow2.util.GroupPopupHelper
+import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +46,19 @@ class HomeActivity : AppCompatActivity() {
         SyncScheduler.enqueueOneTime(this)
         ConnectivityObserver(this).isOnlineFlow()
             .onEach { online ->
-                if (online) SyncScheduler.enqueueOneTime(this)
+                if (online) {
+                    SyncScheduler.enqueueOneTime(this)
+                    val userId = SessionManager.getCurrentUserId(this@HomeActivity).orEmpty()
+                    if (userId.isNotEmpty()) {
+                        runCatching {
+                            OnlineRepository(
+                                DatabaseProvider.get(this@HomeActivity),
+                                OnlineWriteGuard(ConnectivityObserver(this@HomeActivity).isOnlineFlow()),
+                                RtdbClient()
+                            ).ensureDeviceId(userId, DeviceIdProvider.getDeviceId(this@HomeActivity))
+                        }
+                    }
+                }
             }
             .launchIn(lifecycleScope)
 

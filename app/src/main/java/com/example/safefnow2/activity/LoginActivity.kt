@@ -13,11 +13,14 @@ import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbPaths
+import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.util.AlertHelper
+import com.example.safefnow2.util.DeviceIdProvider
 import com.example.safefnow2.util.PasswordHasher
 import com.example.safefnow2.util.SessionManager
 import com.example.safefnow2.util.ConnectivityObserver
+import com.example.safefnow2.util.OnlineWriteGuard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -97,6 +100,15 @@ class LoginActivity : ComponentActivity() {
                     return@launch
                 }
                 SessionManager.setCurrentUserId(this@LoginActivity, user.idUser)
+                runCatching {
+                    val rtdb = RtdbClient()
+                    val onlineRepo = OnlineRepository(
+                        DatabaseProvider.get(this@LoginActivity),
+                        OnlineWriteGuard(ConnectivityObserver(this@LoginActivity).isOnlineFlow()),
+                        rtdb
+                    )
+                    onlineRepo.ensureDeviceId(user.idUser, DeviceIdProvider.getDeviceId(this@LoginActivity))
+                }
                 startActivity(Intent(this@LoginActivity, HomeActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK })
                 finish()
             }
