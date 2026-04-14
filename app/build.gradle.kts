@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+import java.util.Properties
+
 android {
     namespace = "com.example.safefnow2"
     compileSdk {
@@ -18,6 +20,13 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+
+        val localProperties = Properties()
+        rootProject.file("local.properties").takeIf { it.exists() }?.reader()?.use { localProperties.load(it) }
+        val sosBackendUrl: String =
+            localProperties.getProperty("SOS_BACKEND_URL")?.trim()?.takeIf { it.isNotEmpty() }
+                ?: "http://10.0.2.2:8080/"
+        buildConfigField("String", "SOS_BACKEND_URL", "\"${sosBackendUrl.replace("\"", "\\\"")}\"")
     }
 
     buildTypes {
@@ -36,6 +45,7 @@ android {
     buildFeatures {
         compose = true
         viewBinding = true   // ← active ViewBinding pour activity_profile.xml
+        buildConfig = true
     }
 }
 

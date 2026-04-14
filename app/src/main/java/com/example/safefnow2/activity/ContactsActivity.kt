@@ -25,6 +25,8 @@ import com.example.safefnow2.data.local.entity.Amitier
 import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbPaths
+import com.example.safefnow2.data.remote.toUser
+import com.example.safefnow2.data.repository.ContactsOnlineFirstRepository
 import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
 import com.example.safefnow2.data.repository.OnlineRepository
@@ -58,6 +60,7 @@ class ContactsActivity : ComponentActivity() {
         val isOnline = ConnectivityObserver(this).isOnlineFlow()
         OnlineRepository(DatabaseProvider.get(this), OnlineWriteGuard(isOnline), RtdbClient())
     }
+    private val contactsRepo by lazy { ContactsOnlineFirstRepository(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,62 +103,12 @@ class ContactsActivity : ComponentActivity() {
         list.adapter = adapter
 
         val currentUserId = SessionManager.getCurrentUserId(this) ?: return
-        val db = DatabaseProvider.get(this)
-
-        combine(db.amitierDao().getAllFlow(), db.userDao().getAllFlow(), searchQuery) {
-                        amitierList,
-                        users,
-                        query ->
-                    val usersById = users.associateBy { it.idUser }
-                    val acceptedRelations =
-                            amitierList.filter {
-                                it.status.trim().equals("ACCEPTED", ignoreCase = true) &&
-                                        (it.idUser1 == currentUserId || it.idUser2 == currentUserId)
-                            }
-
-                    val items =
-                            acceptedRelations
-                                    .mapNotNull { relation ->
-                                        val otherUserId =
-                                                if (relation.idUser1 == currentUserId)
-                                                        relation.idUser2
-                                                else relation.idUser1
-                                        val other = usersById[otherUserId] ?: return@mapNotNull null
-                                        ContactUiItem(
-                                                amitierIdUser1 = relation.idUser1,
-                                                amitierIdUser2 = relation.idUser2,
-                                                contactUserId = otherUserId,
-                                                prenom = other.prenom,
-                                                nom = other.nom,
-                                                fullName = "${other.prenom} ${other.nom}",
-                                                phoneNumber = other.numTel
-                                        )
-                                    }
-                                    .sortedBy { it.fullName }
-
-                    if (query.isEmpty()) {
-                        items
-                    } else {
-                        val normalizedQuery = query.trim()
-                        val hasSpace = normalizedQuery.contains(' ')
-
-                        if (hasSpace) {
-                            items.filter {
-                                it.fullName.contains(normalizedQuery, ignoreCase = true)
-                            }
-                        } else {
-                            items.filter {
-                                it.prenom.contains(normalizedQuery, ignoreCase = true) ||
-                                        it.nom.contains(normalizedQuery, ignoreCase = true)
-                            }
-                        }
-                    }
-                }
-                .onEach { filtered ->
-                    adapter.submitList(filtered)
-                    empty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
-                }
-                .launchIn(lifecycleScope)
+        contactsRepo.acceptedContacts(currentUserId, searchQuery)
+            .onEach { filtered ->
+                adapter.submitList(filtered.sortedBy { it.fullName })
+                empty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+            }
+            .launchIn(lifecycleScope)
 
         fabAdd.setOnClickListener { showAddContactDialog() }
     }
@@ -261,10 +214,13 @@ class ContactsActivity : ComponentActivity() {
                     if (!online) return@withContext null
 
                     val rtdb = RtdbClient()
-                    val userIdSnap = rtdb.get(RtdbPaths.userByPhone(fullPhone))
-                    val userId = userIdSnap.getValue(String::class.java) ?: return@withContext null
+                    val digits = fullPhone.filter { it.isDigit() }
+                    val userId =
+                        rtdb.get(RtdbPaths.userByPhone(fullPhone)).getValue(String::class.java)
+                            ?: (if (digits.isNotEmpty()) rtdb.get(RtdbPaths.userByPhone(digits)).getValue(String::class.java) else null)
+                            ?: return@withContext null
                     val userSnap = rtdb.get(RtdbPaths.user(userId))
-                    val remoteUser = userSnap.getValue(User::class.java)
+                    val remoteUser = userSnap.toUser()
                     if (remoteUser != null) {
                         db.userDao().insert(remoteUser)
                         runCatching { SyncRepository(db, rtdb).syncNow(SessionManager.getCurrentUserId(this@ContactsActivity).orEmpty()) }
@@ -337,8 +293,13 @@ class ContactsActivity : ComponentActivity() {
                     }
                 }
 
-                if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                    Toast.makeText(this@ContactsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                if (result.isFailure) {
+                    val ex = result.exceptionOrNull()
+                    if (ex is OfflineWriteNotAllowed) {
+                        Toast.makeText(this@ContactsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@ContactsActivity, "Erreur envoi invitation", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     Toast.makeText(this@ContactsActivity, "Demande envoyée", Toast.LENGTH_SHORT).show()
                     dialog.dismiss()

@@ -4,6 +4,9 @@ object RtdbPaths {
     fun user(userId: String) = "users/$userId"
     fun userByPhone(phone: String) = "usersByPhone/$phone"
     fun userDeviceId(userId: String) = "users/$userId/deviceId"
+    fun userSosId(userId: String) = "users/$userId/sos_id"
+    fun userSosSenderName(userId: String) = "users/$userId/sos_senderName"
+    fun userSosCreatedAt(userId: String) = "users/$userId/sos_createdAt"
     fun diseases(userId: String) = "diseases/$userId"
     fun disease(userId: String, diseaseId: String) = "diseases/$userId/$diseaseId"
 

@@ -13,6 +13,7 @@ import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbPaths
+import com.example.safefnow2.data.remote.toUser
 import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.util.AlertHelper
@@ -85,10 +86,13 @@ class LoginActivity : ComponentActivity() {
                     if (!online) return@withContext null
 
                     val rtdb = RtdbClient()
-                    val userIdSnap = rtdb.get(RtdbPaths.userByPhone(phone))
-                    val userId = userIdSnap.getValue(String::class.java) ?: return@withContext null
+                    val digits = phone.filter { it.isDigit() }
+                    val userId =
+                        rtdb.get(RtdbPaths.userByPhone(phone)).getValue(String::class.java)
+                            ?: (if (digits.isNotEmpty()) rtdb.get(RtdbPaths.userByPhone(digits)).getValue(String::class.java) else null)
+                            ?: return@withContext null
                     val userSnap = rtdb.get(RtdbPaths.user(userId))
-                    val remoteUser = userSnap.getValue(com.example.safefnow2.data.local.entity.User::class.java)
+                    val remoteUser = userSnap.toUser()
                     if (remoteUser != null) {
                         db.userDao().insert(remoteUser)
                         runCatching { SyncRepository(db, rtdb).syncNow(remoteUser.idUser) }
@@ -107,6 +111,7 @@ class LoginActivity : ComponentActivity() {
                         OnlineWriteGuard(ConnectivityObserver(this@LoginActivity).isOnlineFlow()),
                         rtdb
                     )
+                    onlineRepo.ensureUserInRtdb(user)
                     onlineRepo.ensureDeviceId(user.idUser, DeviceIdProvider.getDeviceId(this@LoginActivity))
                 }
                 startActivity(Intent(this@LoginActivity, HomeActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK })

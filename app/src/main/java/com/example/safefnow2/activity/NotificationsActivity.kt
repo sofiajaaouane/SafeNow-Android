@@ -21,6 +21,7 @@ import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
 import com.example.safefnow2.data.repository.OnlineRepository
+import com.example.safefnow2.data.repository.AlertsOnlineFirstRepository
 import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
@@ -43,12 +44,16 @@ class NotificationsActivity : AppCompatActivity() {
     private lateinit var llSosHistory: LinearLayout
     private lateinit var tvSosHistoryEmpty: TextView
     private lateinit var progressSosHistory: ProgressBar
+    private lateinit var sentContainer: LinearLayout
+    private lateinit var tvSentEmpty: TextView
 
     private var currentUserId: String = ""
     private val onlineRepo by lazy {
         val isOnline = ConnectivityObserver(this).isOnlineFlow()
         OnlineRepository(DatabaseProvider.get(this), OnlineWriteGuard(isOnline), RtdbClient())
     }
+    private val alertsRepo by lazy { AlertsOnlineFirstRepository(this) }
+    private var collectorsStarted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,14 +71,12 @@ class NotificationsActivity : AppCompatActivity() {
         amitierDao = database.amitierDao()
 
         initViews()
-        loadAll()
+        startCollectors()
     }
 
     override fun onResume() {
         super.onResume()
-        if (currentUserId.isNotEmpty()) {
-            loadAll()
-        }
+        // Data updates are live when online and fallback when offline.
     }
 
     private fun initViews() {
@@ -86,23 +89,35 @@ class NotificationsActivity : AppCompatActivity() {
         llSosHistory = findViewById(R.id.llSosHistory)
         tvSosHistoryEmpty = findViewById(R.id.tvSosHistoryEmpty)
         progressSosHistory = findViewById(R.id.progressSosHistory)
+        sentContainer = findViewById(R.id.sentContainer)
+        tvSentEmpty = findViewById(R.id.tvSentEmpty)
 
         btnBack.setOnClickListener { finish() }
     }
 
-    private fun loadAll() {
+    private fun startCollectors() {
+        if (collectorsStarted) return
+        collectorsStarted = true
         progressBar.visibility = View.VISIBLE
         scrollView.visibility = View.GONE
 
+        // RTDB-first: listen online, fall back to Room when offline.
+        lifecycleScope.launch {
+            alertsRepo.pendingReceivedUsers(currentUserId).collect { users ->
+                displayRequests(users)
+            }
+        }
+        lifecycleScope.launch {
+            alertsRepo.pendingSentUsers(currentUserId).collect { sent ->
+                displaySentRequests(sent)
+            }
+        }
         lifecycleScope.launch(Dispatchers.IO) {
-            val users = amitierDao.getPendingReceivedRequests(currentUserId)
             val history = runCatching { SosRepository(this@NotificationsActivity).loadSosHistoryForMyPhone() }
                 .getOrElse { emptyList() }
-
             withContext(Dispatchers.Main) {
                 progressBar.visibility = View.GONE
                 scrollView.visibility = View.VISIBLE
-                displayRequests(users)
                 displaySosHistory(history)
             }
         }
@@ -120,6 +135,49 @@ class NotificationsActivity : AppCompatActivity() {
             tvRequestCount.text = requests.size.toString()
             requests.forEach { user -> requestsContainer.addView(createRequestItem(user)) }
         }
+    }
+
+    private fun displaySentRequests(sent: List<User>) {
+        sentContainer.removeAllViews()
+        if (sent.isEmpty()) {
+            tvSentEmpty.visibility = View.VISIBLE
+        } else {
+            tvSentEmpty.visibility = View.GONE
+            sent.forEach { user -> sentContainer.addView(createSentItem(user)) }
+        }
+    }
+
+    private fun createSentItem(user: User): View {
+        val itemView =
+            LayoutInflater.from(this).inflate(R.layout.item_friend_request, sentContainer, false)
+
+        val tvInitials: TextView = itemView.findViewById(R.id.tvInitials)
+        val tvName: TextView = itemView.findViewById(R.id.tvName)
+        val tvPhone: TextView = itemView.findViewById(R.id.tvPhone)
+        val tvEmail: TextView = itemView.findViewById(R.id.tvEmail)
+        val btnAccept: Button = itemView.findViewById(R.id.btnAccept)
+        val btnReject: Button = itemView.findViewById(R.id.btnReject)
+
+        val p = user.prenom.firstOrNull()
+        val n = user.nom.firstOrNull()
+        tvInitials.text =
+            buildString {
+                if (p != null) append(p.uppercaseChar())
+                if (n != null) append(n.uppercaseChar())
+            }
+
+        tvName.text = "${user.prenom} ${user.nom} (Pending)"
+        tvPhone.text = user.numTel
+
+        if (!user.email.isNullOrEmpty()) {
+            tvEmail.text = user.email
+            tvEmail.visibility = View.VISIBLE
+        }
+
+        btnAccept.visibility = View.GONE
+        btnReject.visibility = View.GONE
+
+        return itemView
     }
 
     private fun displaySosHistory(entries: List<SosHistoryEntry>) {
@@ -191,7 +249,6 @@ class NotificationsActivity : AppCompatActivity() {
                     Toast.makeText(this@NotificationsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this@NotificationsActivity, "Ami ajouté", Toast.LENGTH_SHORT).show()
-                    loadAll()
                 }
             }
         }
@@ -205,7 +262,6 @@ class NotificationsActivity : AppCompatActivity() {
                     Toast.makeText(this@NotificationsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this@NotificationsActivity, "Invitation refusée", Toast.LENGTH_SHORT).show()
-                    loadAll()
                 }
             }
         }

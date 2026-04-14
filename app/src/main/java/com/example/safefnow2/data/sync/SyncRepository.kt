@@ -10,6 +10,12 @@ import com.example.safefnow2.data.local.entity.Item
 import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbPaths
+import com.example.safefnow2.data.remote.toAlert
+import com.example.safefnow2.data.remote.toDeclarationAlert
+import com.example.safefnow2.data.remote.toDisease
+import com.example.safefnow2.data.remote.toEmergencyGroup
+import com.example.safefnow2.data.remote.toItem
+import com.example.safefnow2.data.remote.toUser
 
 class SyncRepository(
     private val database: SafeNowDatabase,
@@ -25,7 +31,7 @@ class SyncRepository(
 
     private suspend fun syncUser(userId: String) {
         val snap = rtdb.get(RtdbPaths.user(userId))
-        val user = snap.getValue(User::class.java) ?: return
+        val user = snap.toUser() ?: return
         database.userDao().insert(user)
     }
 
@@ -33,7 +39,7 @@ class SyncRepository(
         val snap = rtdb.get(RtdbPaths.diseases(userId))
         val list = mutableListOf<Disease>()
         for (child in snap.children) {
-            val disease = child.getValue(Disease::class.java) ?: continue
+            val disease = child.toDisease() ?: continue
             list.add(disease)
         }
         database.diseaseDao().deleteByUserId(userId)
@@ -64,7 +70,7 @@ class SyncRepository(
 
         for (groupId in groupIds) {
             val groupSnap = rtdb.get(RtdbPaths.emergencyGroup(groupId))
-            val group = groupSnap.getValue(EmergencyGroup::class.java) ?: continue
+            val group = groupSnap.toEmergencyGroup() ?: continue
             database.emergencyGroupDao().insert(group)
 
             val membersSnap = rtdb.get(RtdbPaths.groupMembers(groupId))
@@ -78,7 +84,7 @@ class SyncRepository(
             val itemsSnap = rtdb.get(RtdbPaths.groupItems(groupId))
             database.itemDao().deleteByGroupId(groupId)
             for (itSnap in itemsSnap.children) {
-                val item = itSnap.getValue(Item::class.java) ?: continue
+                val item = itSnap.toItem() ?: continue
                 database.itemDao().insert(item)
             }
         }
@@ -89,12 +95,12 @@ class SyncRepository(
         database.declarationAlertDao().deleteByUserId(userId)
 
         for (child in declSnap.children) {
-            val decl = child.getValue(DeclarationAlert::class.java) ?: continue
+            val decl = child.toDeclarationAlert() ?: continue
             database.declarationAlertDao().insert(decl)
 
             val alertId = decl.idAlert
             val alertSnap = rtdb.get(RtdbPaths.alert(alertId))
-            val alert = alertSnap.getValue(com.example.safefnow2.data.local.entity.Alert::class.java)
+            val alert = alertSnap.toAlert()
             if (alert != null) {
                 database.alertDao().insert(alert)
             }

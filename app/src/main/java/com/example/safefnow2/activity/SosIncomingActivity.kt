@@ -7,6 +7,14 @@ import android.view.WindowManager
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import com.example.safefnow2.R
+import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.remote.RtdbPaths
+import com.example.safefnow2.util.SessionManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class SosIncomingActivity : ComponentActivity() {
 
@@ -15,6 +23,8 @@ class SosIncomingActivity : ComponentActivity() {
     }
 
     private var ringtone: Ringtone? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val rtdb by lazy { RtdbClient() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +44,7 @@ class SosIncomingActivity : ComponentActivity() {
 
         findViewById<TextView>(R.id.btnSosIncomingStop).setOnClickListener {
             stopAlarm()
+            clearSosId()
             finish()
         }
 
@@ -54,8 +65,22 @@ class SosIncomingActivity : ComponentActivity() {
         ringtone = null
     }
 
+    private fun clearSosId() {
+        val userId = SessionManager.getCurrentUserId(this)?.trim().orEmpty()
+        if (userId.isEmpty()) return
+        scope.launch(Dispatchers.IO) {
+            val updates = mapOf(
+                RtdbPaths.userSosId(userId) to null,
+                RtdbPaths.userSosSenderName(userId) to null,
+                RtdbPaths.userSosCreatedAt(userId) to null
+            )
+            runCatching { rtdb.updateChildren("", updates) }
+        }
+    }
+
     override fun onDestroy() {
         stopAlarm()
+        scope.cancel()
         super.onDestroy()
     }
 }

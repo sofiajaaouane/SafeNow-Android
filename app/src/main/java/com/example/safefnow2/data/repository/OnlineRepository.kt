@@ -11,6 +11,7 @@ import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbPaths
 import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.util.OnlineWriteGuard
+import java.util.UUID
 
 class OnlineRepository(
     private val database: SafeNowDatabase,
@@ -19,16 +20,47 @@ class OnlineRepository(
 ) {
     private val syncRepo = SyncRepository(database, rtdb)
 
+    private fun phoneDigits(phone: String): String = phone.filter { it.isDigit() }
+
+    private fun anyToBool(value: Any?): Boolean {
+        return when (value) {
+            is Boolean -> value
+            is Number -> value.toInt() == 1
+            is String -> {
+                val v = value.trim().lowercase()
+                v == "true" || v == "1" || v == "yes"
+            }
+            else -> false
+        }
+    }
+
+    suspend fun ensureUserInRtdb(user: User) {
+        if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
+        val digits = phoneDigits(user.numTel)
+        val updates = mapOf(
+            RtdbPaths.user(user.idUser) to user.toMap(rtdb),
+            RtdbPaths.userByPhone(user.numTel) to user.idUser,
+            (if (digits.isNotEmpty()) RtdbPaths.userByPhone(digits) else "x") to user.idUser,
+        )
+        rtdb.updateChildren("", updates.filterKeys { it != "x" })
+    }
+
     suspend fun updateProfile(user: User, diseases: List<Disease>) {
         if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
 
         val oldPhone = database.userDao().getById(user.idUser)?.numTel
+        val oldDigits = oldPhone?.let { phoneDigits(it) }.orEmpty()
+        val newDigits = phoneDigits(user.numTel)
 
         val updates = mutableMapOf<String, Any?>()
         updates[RtdbPaths.user(user.idUser)] = user.toMap(rtdb)
         updates[RtdbPaths.userByPhone(user.numTel)] = user.idUser
+        if (newDigits.isNotEmpty()) updates[RtdbPaths.userByPhone(newDigits)] = user.idUser
         if (!oldPhone.isNullOrEmpty() && oldPhone != user.numTel) {
             updates[RtdbPaths.userByPhone(oldPhone)] = null
+        }
+        if (oldDigits.isNotEmpty() && oldDigits != newDigits) {
+            updates[RtdbPaths.userByPhone(oldDigits)] = null
         }
         updates[RtdbPaths.diseases(user.idUser)] = null
         diseases.forEach { d ->
@@ -40,11 +72,13 @@ class OnlineRepository(
 
     suspend fun createAccount(user: User) {
         if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
+        val digits = phoneDigits(user.numTel)
         val updates = mapOf(
             RtdbPaths.user(user.idUser) to user.toMap(rtdb),
             RtdbPaths.userByPhone(user.numTel) to user.idUser,
+            (if (digits.isNotEmpty()) RtdbPaths.userByPhone(digits) else "x") to user.idUser,
         )
-        rtdb.updateChildren("", updates)
+        rtdb.updateChildren("", updates.filterKeys { it != "x" })
         syncRepo.syncNow(user.idUser)
     }
 
@@ -123,6 +157,59 @@ class OnlineRepository(
         )
         rtdb.updateChildren("", updates)
         syncRepo.syncNow(currentUserId)
+    }
+
+    suspend fun sendGroupSos(groupId: String, senderName: String, groupAdminId: String, currentUserId: String) {
+        if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
+        if (currentUserId != groupAdminId) throw IllegalStateException("not_admin")
+        val membersSnap = rtdb.get(RtdbPaths.groupMembers(groupId))
+        val memberIds = membersSnap.children.mapNotNull { it.key }.filter { it.isNotBlank() }
+        if (memberIds.isEmpty()) return
+
+        val sosId = UUID.randomUUID().toString()
+        val updates = mutableMapOf<String, Any?>()
+        memberIds.filter { it != currentUserId }.forEach { uid ->
+            updates[RtdbPaths.userSosId(uid)] = sosId
+            updates[RtdbPaths.userSosSenderName(uid)] = senderName
+            updates[RtdbPaths.userSosCreatedAt(uid)] = rtdb.serverTimestamp()
+        }
+        if (updates.isNotEmpty()) {
+            rtdb.updateChildren("", updates)
+        }
+    }
+
+    suspend fun sendGlobalSosToActiveGroups(currentUserId: String, senderName: String): Int {
+        if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
+        val membershipSnap = rtdb.get(RtdbPaths.groupMembersByUser(currentUserId))
+        val groupIds = membershipSnap.children.mapNotNull { it.key }.filter { it.isNotBlank() }
+        if (groupIds.isEmpty()) return 0
+
+        val sosId = UUID.randomUUID().toString()
+        val updates = mutableMapOf<String, Any?>()
+        val receivers = linkedSetOf<String>()
+
+        for (groupId in groupIds) {
+            val gSnap = rtdb.get(RtdbPaths.emergencyGroup(groupId))
+            val sosGlobalVal: Any? =
+                gSnap.child("sosGlobal").getValue(Any::class.java)
+                    ?: gSnap.child("sos_global").getValue(Any::class.java)
+            if (!anyToBool(sosGlobalVal)) continue
+
+            val membersSnap = rtdb.get(RtdbPaths.groupMembers(groupId))
+            membersSnap.children.mapNotNull { it.key }
+                .filter { it.isNotBlank() && it != currentUserId }
+                .forEach { uid ->
+                    receivers.add(uid)
+                    updates[RtdbPaths.userSosId(uid)] = sosId
+                    updates[RtdbPaths.userSosSenderName(uid)] = senderName
+                    updates[RtdbPaths.userSosCreatedAt(uid)] = rtdb.serverTimestamp()
+                }
+        }
+
+        if (updates.isNotEmpty()) {
+            rtdb.updateChildren("", updates)
+        }
+        return receivers.size
     }
 
     suspend fun sendFriendRequest(edge: Amitier, currentUserId: String) {

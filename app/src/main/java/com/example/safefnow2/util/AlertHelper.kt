@@ -91,12 +91,19 @@ object AlertHelper {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setOngoing(true)
             .setAutoCancel(false)
-            .setContentIntent(pending)
             .setFullScreenIntent(pending, true)
 
         try {
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
         } catch (_: SecurityException) { }
+    }
+
+    fun startSosIncomingActivity(context: Context, senderName: String) {
+        val intent = Intent(context, SosIncomingActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(SosIncomingActivity.EXTRA_SENDER_NAME, senderName)
+        }
+        runCatching { context.startActivity(intent) }
     }
 
     fun vibrate(context: Context) {

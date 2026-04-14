@@ -44,6 +44,14 @@ interface AmitierDao {
     """)
     suspend fun getPendingReceivedRequests(userId: String): List<User>
 
+    @Query("""
+        SELECT u.* FROM user u
+        INNER JOIN amitier a ON a.id_user1 = u.id_user
+        WHERE a.id_user2 = :userId AND a.status = 'PENDING'
+        ORDER BY u.nom, u.prenom
+    """)
+    fun getPendingReceivedRequestsFlow(userId: String): Flow<List<User>>
+
     // Récupérer les invitations ENVOYÉES en attente
     @Query("""
         SELECT u.* FROM user u
@@ -52,6 +60,14 @@ interface AmitierDao {
         ORDER BY u.nom, u.prenom
     """)
     suspend fun getPendingSentRequests(userId: String): List<User>
+
+    @Query("""
+        SELECT u.* FROM user u
+        INNER JOIN amitier a ON a.id_user2 = u.id_user
+        WHERE a.id_user1 = :userId AND a.status = 'PENDING'
+        ORDER BY u.nom, u.prenom
+    """)
+    fun getPendingSentRequestsFlow(userId: String): Flow<List<User>>
 
     // Accepter une invitation (mettre à jour le status)
     @Query("""
@@ -86,6 +102,12 @@ interface AmitierDao {
         WHERE id_user2 = :userId AND status = 'PENDING'
     """)
     suspend fun getPendingRequestsCount(userId: String): Int
+
+    @Query("""
+        SELECT COUNT(*) FROM amitier 
+        WHERE id_user2 = :userId AND status = 'PENDING'
+    """)
+    fun getPendingRequestsCountFlow(userId: String): Flow<Int>
 
     // Vérifier si deux utilisateurs sont déjà amis
     @Query("""

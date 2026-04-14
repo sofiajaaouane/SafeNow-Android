@@ -104,6 +104,32 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"/>
 
+            <TextView
+                android:id="@+id/tvSentTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Invitations envoyées"
+                android:textColor="#111111"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:id="@+id/tvSentEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Aucune invitation envoyée"
+                android:textColor="#999999"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/sentContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"/>
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"

@@ -7,12 +7,17 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.tasks.await
+import java.util.UUID
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.charset.StandardCharsets
 
 class SosRepository(context: Context) {
 
     private val appContext = context.applicationContext
     private val firestore = FirebaseFirestore.getInstance()
     private val prefs = SosDevicePrefs(appContext)
+    private val rtdb = RtdbClient()
 
     private fun normalizePhoneDigits(phone: String): String =
         phone.filter { it.isDigit() }
@@ -35,6 +40,7 @@ class SosRepository(context: Context) {
             val index = hashMapOf(
                 "deviceId" to deviceId,
                 "displayName" to displayName,
+                "fcmToken" to token,
                 "updatedAt" to FieldValue.serverTimestamp()
             )
             firestore.collection("phone_index").document(digits).set(index, SetOptions.merge()).await()
@@ -73,10 +79,50 @@ class SosRepository(context: Context) {
         senderDisplayName: String,
         contactDisplayName: String
     ) {
-        val targetId = lookupDeviceIdByPhone(contactPhone)
-            ?: throw IllegalStateException("contact_device_unknown")
         val digits = normalizePhoneDigits(contactPhone)
-        sendSosToTarget(targetId, senderDisplayName, digits, contactDisplayName)
+        if (digits.isEmpty()) throw IllegalStateException("contact_device_unknown")
+
+        val targetUserId = resolveUserIdByPhone(contactPhone)
+            ?: resolveUserIdByPhone(digits)
+            ?: throw IllegalStateException("contact_device_unknown")
+
+        val sosId = UUID.randomUUID().toString()
+        writeSosIdToRtdb(targetUserId = targetUserId, sosId = sosId, senderName = senderDisplayName)
+    }
+
+    private suspend fun resolveUserIdByPhone(phoneKey: String): String? {
+        val key = phoneKey.trim()
+        if (key.isEmpty()) return null
+        val snap = rtdb.get(RtdbPaths.userByPhone(key))
+        return snap.getValue(String::class.java)?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
+    private suspend fun writeSosIdToRtdb(targetUserId: String, sosId: String, senderName: String) {
+        val updates = mapOf(
+            RtdbPaths.userSosId(targetUserId) to sosId,
+            RtdbPaths.userSosSenderName(targetUserId) to senderName,
+            RtdbPaths.userSosCreatedAt(targetUserId) to rtdb.serverTimestamp()
+        )
+        rtdb.updateChildren("", updates)
+    }
+
+    private fun sendViaBackend(contactPhone: String, senderName: String) {
+        val base = com.example.safefnow2.BuildConfig.SOS_BACKEND_URL.trim().let { if (it.endsWith("/")) it else "$it/" }
+        val url = URL(base + "sos/send")
+        val json = """{"targetPhone":"${contactPhone.replace("\"", "")}","senderName":"${senderName.replace("\"", "")}"}"""
+        val bytes = json.toByteArray(StandardCharsets.UTF_8)
+        val conn = (url.openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            connectTimeout = 10000
+            readTimeout = 15000
+            doOutput = true
+            setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        }
+        conn.outputStream.use { it.write(bytes) }
+        val code = conn.responseCode
+        if (code !in 200..299) {
+            throw IllegalStateException("backend_failed_$code")
+        }
     }
 
     suspend fun sendSosToTarget(
@@ -92,6 +138,7 @@ class SosRepository(context: Context) {
         }
         val request = hashMapOf(
             "targetDeviceId" to targetId,
+            "targetPhoneDigits" to (targetPhoneDigitsHint ?: ""),
             "senderDeviceId" to myId,
             "senderName" to senderDisplayName,
             "createdAt" to FieldValue.serverTimestamp()

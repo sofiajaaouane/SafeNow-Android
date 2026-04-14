@@ -14,6 +14,8 @@ import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.EmergencyGroup
 import com.example.safefnow2.data.local.entity.GroupMember
 import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.remote.RtdbPaths
+import com.example.safefnow2.data.remote.toUser
 import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
 import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.util.ConnectivityObserver
@@ -76,6 +78,34 @@ object GroupPopupHelper {
         // Add member button
         popupView.findViewById<TextView>(R.id.btnAddMember).setOnClickListener {
             showAddMemberDialog(activity, scope, group.idGroup, userId, membersContainer)
+        }
+
+        // SOS group button (admin only)
+        val btnSos = popupView.findViewById<android.view.View>(R.id.btnSOS)
+        if (group.idAdmin != userId) {
+            btnSos.visibility = android.view.View.GONE
+        }
+        btnSos.setOnClickListener {
+            if (group.sosGlobal != 1) {
+                Toast.makeText(activity, "Groupe désactivé", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            scope.launch {
+                val senderName = withContext(Dispatchers.IO) {
+                    val me = DatabaseProvider.get(activity).userDao().getById(userId)
+                    me?.let { "${it.prenom} ${it.nom}".trim() }?.ifEmpty { "SafeNow" } ?: "SafeNow"
+                }
+                val result = withContext(Dispatchers.IO) {
+                    runCatching { onlineRepo(activity).sendGroupSos(group.idGroup, senderName, group.idAdmin, userId) }
+                }
+                if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                    Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                } else if (result.isFailure && result.exceptionOrNull()?.message == "not_admin") {
+                    Toast.makeText(activity, "Seul l'admin peut lancer SOS", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(activity, "SOS envoyé au groupe", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         // Delete group button
@@ -189,11 +219,7 @@ object GroupPopupHelper {
     ) {
         scope.launch {
             val availableFriends = withContext(Dispatchers.IO) {
-                val allFriends = DatabaseProvider.get(activity).amitierDao()
-                    .getAcceptedFriends(userId)
-                val existingIds = DatabaseProvider.get(activity).groupMemberDao()
-                    .getByGroupId(groupId).map { it.idUser }
-                allFriends.filter { it.idUser !in existingIds }
+                loadAvailableFriends(activity, userId, groupId)
             }
 
             if (availableFriends.isEmpty()) {
@@ -240,5 +266,51 @@ object GroupPopupHelper {
                 .setNegativeButton("Annuler", null)
                 .show()
         }
+    }
+
+    private suspend fun loadAvailableFriends(
+        activity: AppCompatActivity,
+        currentUserId: String,
+        groupId: String
+    ): List<com.example.safefnow2.data.local.entity.User> {
+        val db = DatabaseProvider.get(activity)
+        val tryOnline = runCatching {
+            val rtdb = RtdbClient()
+            val outSnap = rtdb.get(RtdbPaths.friendshipOut(currentUserId))
+            val inSnap = rtdb.get(RtdbPaths.friendshipIn(currentUserId))
+            val membersSnap = rtdb.get(RtdbPaths.groupMembers(groupId))
+
+            val existingMemberIds = membersSnap.children.mapNotNull { it.key }.toSet()
+
+            fun collectAcceptedIds(snap: com.google.firebase.database.DataSnapshot): Set<String> {
+                val ids = linkedSetOf<String>()
+                snap.children.forEach { child ->
+                    val otherId = child.key ?: return@forEach
+                    val status = child.child("status").getValue(String::class.java) ?: "PENDING"
+                    if (status == "ACCEPTED") ids.add(otherId)
+                }
+                return ids
+            }
+
+            val accepted = linkedSetOf<String>()
+            accepted.addAll(collectAcceptedIds(outSnap))
+            accepted.addAll(collectAcceptedIds(inSnap))
+
+            val users = accepted
+                .filter { it !in existingMemberIds && it != currentUserId }
+                .mapNotNull { id ->
+                    val uSnap = rtdb.get(RtdbPaths.user(id))
+                    uSnap.toUser()
+                }
+
+            users.forEach { u -> db.userDao().insert(u) }
+            users
+        }
+
+        if (tryOnline.isSuccess) return tryOnline.getOrThrow()
+
+        val allFriends = db.amitierDao().getAcceptedFriends(currentUserId)
+        val existingIds = db.groupMemberDao().getByGroupId(groupId).map { it.idUser }.toSet()
+        return allFriends.filter { it.idUser !in existingIds }
     }
 }
