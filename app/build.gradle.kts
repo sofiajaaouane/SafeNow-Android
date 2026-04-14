@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.firebase.database)
     ksp(libs.androidx.room.compiler)
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // ── Lifecycle (lifecycleScope dans ProfileActivity) ───────────────────────
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0")

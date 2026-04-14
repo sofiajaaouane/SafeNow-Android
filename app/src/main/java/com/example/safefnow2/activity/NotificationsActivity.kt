@@ -18,6 +18,11 @@ import com.example.safefnow2.data.remote.SosRepository
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.dao.AmitierDao
 import com.example.safefnow2.data.local.entity.User
+import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
+import com.example.safefnow2.data.repository.OnlineRepository
+import com.example.safefnow2.util.ConnectivityObserver
+import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -40,6 +45,10 @@ class NotificationsActivity : AppCompatActivity() {
     private lateinit var progressSosHistory: ProgressBar
 
     private var currentUserId: String = ""
+    private val onlineRepo by lazy {
+        val isOnline = ConnectivityObserver(this).isOnlineFlow()
+        OnlineRepository(DatabaseProvider.get(this), OnlineWriteGuard(isOnline), RtdbClient())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -176,20 +185,28 @@ class NotificationsActivity : AppCompatActivity() {
 
     private fun acceptRequest(user: User) {
         lifecycleScope.launch(Dispatchers.IO) {
-            amitierDao.acceptRequest(user.idUser, currentUserId)
+            val result = runCatching { onlineRepo.acceptFriendRequest(user.idUser, currentUserId) }
             withContext(Dispatchers.Main) {
-                Toast.makeText(this@NotificationsActivity, "Ami ajouté", Toast.LENGTH_SHORT).show()
-                loadAll()
+                if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                    Toast.makeText(this@NotificationsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@NotificationsActivity, "Ami ajouté", Toast.LENGTH_SHORT).show()
+                    loadAll()
+                }
             }
         }
     }
 
     private fun rejectRequest(user: User) {
         lifecycleScope.launch(Dispatchers.IO) {
-            amitierDao.rejectRequest(user.idUser, currentUserId)
+            val result = runCatching { onlineRepo.rejectFriendRequest(user.idUser, currentUserId) }
             withContext(Dispatchers.Main) {
-                Toast.makeText(this@NotificationsActivity, "Invitation refusée", Toast.LENGTH_SHORT).show()
-                loadAll()
+                if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                    Toast.makeText(this@NotificationsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@NotificationsActivity, "Invitation refusée", Toast.LENGTH_SHORT).show()
+                    loadAll()
+                }
             }
         }
     }

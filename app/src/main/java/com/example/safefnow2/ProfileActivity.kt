@@ -18,9 +18,14 @@ import com.example.safefnow2.activity.LoginActivity
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.Disease
 import com.example.safefnow2.data.local.entity.User
+import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
+import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.databinding.ActivityProfileBinding
 import com.example.safefnow2.data.SosDevicePrefs
 import com.example.safefnow2.data.remote.SosRepository
+import com.example.safefnow2.util.ConnectivityObserver
+import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,6 +41,10 @@ class ProfileActivity : AppCompatActivity() {
     private val userDao by lazy { DatabaseProvider.get(this).userDao() }
     private val diseaseDao by lazy { DatabaseProvider.get(this).diseaseDao() }
     private val sosRepository by lazy { SosRepository(this) }
+    private val onlineRepo by lazy {
+        val isOnline = ConnectivityObserver(this).isOnlineFlow()
+        OnlineRepository(DatabaseProvider.get(this), OnlineWriteGuard(isOnline), RtdbClient())
+    }
 
     // ── ID du user connecté ──────────────────────────────────────────────────
     private lateinit var currentUserId: String
@@ -311,27 +320,30 @@ class ProfileActivity : AppCompatActivity() {
         val diseaseEntities = collectDiseases()
 
         lifecycleScope.launch(Dispatchers.IO) {
-            userDao.update(updatedUser)
-            diseaseDao.deleteByUserId(currentUserId)
-            diseaseEntities.forEach { disease ->
-                diseaseDao.insert(disease)
-            }
-
+            val result = runCatching { onlineRepo.updateProfile(updatedUser, diseaseEntities) }
             withContext(Dispatchers.Main) {
-                currentUser = updatedUser
-                binding.tvUserName.text = "${updatedUser.nom} ${updatedUser.prenom}"
-                binding.etPassword.setText("")
-                isPasswordVisible = false
-                binding.etPassword.transformationMethod =
-                    PasswordTransformationMethod.getInstance()
-                Toast.makeText(this@ProfileActivity, "Profil mis a jour", Toast.LENGTH_SHORT).show()
-                lifecycleScope.launch(Dispatchers.IO) {
-                    runCatching {
-                        sosRepository.syncMyDeviceToCloud(
-                            "${updatedUser.prenom} ${updatedUser.nom}".trim().ifEmpty { "SafeNow" },
-                            updatedUser.numTel,
-                            updatedUser.idUser
-                        )
+                result.onFailure {
+                    if (it is OfflineWriteNotAllowed) {
+                        Toast.makeText(this@ProfileActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@ProfileActivity, "Erreur", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                result.onSuccess {
+                    currentUser = updatedUser
+                    binding.tvUserName.text = "${updatedUser.nom} ${updatedUser.prenom}"
+                    binding.etPassword.setText("")
+                    isPasswordVisible = false
+                    binding.etPassword.transformationMethod = PasswordTransformationMethod.getInstance()
+                    Toast.makeText(this@ProfileActivity, "Profil mis a jour", Toast.LENGTH_SHORT).show()
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        runCatching {
+                            sosRepository.syncMyDeviceToCloud(
+                                "${updatedUser.prenom} ${updatedUser.nom}".trim().ifEmpty { "SafeNow" },
+                                updatedUser.numTel,
+                                updatedUser.idUser
+                            )
+                        }
                     }
                 }
             }
@@ -356,16 +368,19 @@ class ProfileActivity : AppCompatActivity() {
         val user = currentUser ?: return
 
         lifecycleScope.launch(Dispatchers.IO) {
-            diseaseDao.deleteByUserId(currentUserId)
-            userDao.delete(user)
+            val result = runCatching { onlineRepo.deleteAccount(currentUserId) }
 
             withContext(Dispatchers.Main) {
-                SessionManager.clear(this@ProfileActivity)
-                Toast.makeText(this@ProfileActivity, "Compte supprime", Toast.LENGTH_SHORT).show()
-                val intent = Intent(this@ProfileActivity, LoginActivity::class.java)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                startActivity(intent)
-                finish()
+                if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                    Toast.makeText(this@ProfileActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                } else {
+                    SessionManager.clear(this@ProfileActivity)
+                    Toast.makeText(this@ProfileActivity, "Compte supprime", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this@ProfileActivity, LoginActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    startActivity(intent)
+                    finish()
+                }
             }
         }
     }

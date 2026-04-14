@@ -37,4 +37,7 @@ interface ItemDao {
 
     @Query("SELECT * FROM items WHERE id_group = :idGroup ORDER BY name")
     fun getByGroupIdFlow(idGroup: String): Flow<List<Item>>
+
+    @Query("DELETE FROM items WHERE id_group = :idGroup")
+    suspend fun deleteByGroupId(idGroup: String)
 }

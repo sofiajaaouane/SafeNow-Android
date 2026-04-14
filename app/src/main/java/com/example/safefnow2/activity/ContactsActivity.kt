@@ -23,12 +23,20 @@ import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.Amitier
 import com.example.safefnow2.data.local.entity.User
+import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.remote.RtdbPaths
+import com.example.safefnow2.data.sync.SyncRepository
+import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
+import com.example.safefnow2.data.repository.OnlineRepository
+import com.example.safefnow2.util.ConnectivityObserver
+import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -46,6 +54,10 @@ class ContactsActivity : ComponentActivity() {
 
     private val searchQuery = MutableStateFlow("")
     private lateinit var adapter: ContactsAdapter
+    private val onlineRepo by lazy {
+        val isOnline = ConnectivityObserver(this).isOnlineFlow()
+        OnlineRepository(DatabaseProvider.get(this), OnlineWriteGuard(isOnline), RtdbClient())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -167,19 +179,20 @@ class ContactsActivity : ComponentActivity() {
 
     private fun deleteAmitier(item: ContactUiItem) {
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                val db = DatabaseProvider.get(this@ContactsActivity)
-                // Delete needs matching primary keys: id_user1 + id_user2.
-                db.amitierDao()
-                        .delete(
-                                Amitier(
-                                        idUser1 = item.amitierIdUser1,
-                                        idUser2 = item.amitierIdUser2,
-                                        status = "PENDING"
-                                )
-                        )
+            val currentUserId = SessionManager.getCurrentUserId(this@ContactsActivity).orEmpty()
+            val edge = Amitier(
+                idUser1 = item.amitierIdUser1,
+                idUser2 = item.amitierIdUser2,
+                status = "PENDING"
+            )
+            val result = withContext(Dispatchers.IO) {
+                runCatching { onlineRepo.deleteFriendEdge(edge, currentUserId) }
             }
-            Toast.makeText(this@ContactsActivity, "Contact supprimé", Toast.LENGTH_SHORT).show()
+            if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                Toast.makeText(this@ContactsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this@ContactsActivity, "Contact supprimé", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -240,7 +253,24 @@ class ContactsActivity : ComponentActivity() {
 
             lifecycleScope.launch {
                 val db = DatabaseProvider.get(this@ContactsActivity)
-                val user = withContext(Dispatchers.IO) { db.userDao().getByPhone(fullPhone) }
+                val user = withContext(Dispatchers.IO) {
+                    val local = db.userDao().getByPhone(fullPhone)
+                    if (local != null) return@withContext local
+
+                    val online = ConnectivityObserver(this@ContactsActivity).isOnlineFlow().first()
+                    if (!online) return@withContext null
+
+                    val rtdb = RtdbClient()
+                    val userIdSnap = rtdb.get(RtdbPaths.userByPhone(fullPhone))
+                    val userId = userIdSnap.getValue(String::class.java) ?: return@withContext null
+                    val userSnap = rtdb.get(RtdbPaths.user(userId))
+                    val remoteUser = userSnap.getValue(User::class.java)
+                    if (remoteUser != null) {
+                        db.userDao().insert(remoteUser)
+                        runCatching { SyncRepository(db, rtdb).syncNow(SessionManager.getCurrentUserId(this@ContactsActivity).orEmpty()) }
+                    }
+                    remoteUser
+                }
 
                 foundUser = user
 
@@ -294,19 +324,25 @@ class ContactsActivity : ComponentActivity() {
                     return@launch
                 }
 
-                withContext(Dispatchers.IO) {
-                    db.amitierDao()
-                            .insert(
-                                    Amitier(
-                                            idUser1 = currentUserId,
-                                            idUser2 = user.idUser,
-                                            status = "PENDING"
-                                    )
-                            )
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        onlineRepo.sendFriendRequest(
+                            Amitier(
+                                idUser1 = currentUserId,
+                                idUser2 = user.idUser,
+                                status = "PENDING"
+                            ),
+                            currentUserId = currentUserId
+                        )
+                    }
                 }
 
-                Toast.makeText(this@ContactsActivity, "Demande envoyée", Toast.LENGTH_SHORT).show()
-                dialog.dismiss()
+                if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                    Toast.makeText(this@ContactsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@ContactsActivity, "Demande envoyée", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
             }
         }
 

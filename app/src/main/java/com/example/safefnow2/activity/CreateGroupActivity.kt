@@ -13,9 +13,13 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.local.entity.EmergencyGroup
-import com.example.safefnow2.data.local.entity.GroupMember
 import com.example.safefnow2.data.local.entity.Item
+import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
+import com.example.safefnow2.data.repository.OnlineRepository
+import com.example.safefnow2.util.ConnectivityObserver
+import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,9 +35,10 @@ class CreateGroupActivity : ComponentActivity() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
 
-    private val emergencyGroupDao by lazy { DatabaseProvider.get(this).emergencyGroupDao() }
-    private val groupMemberDao    by lazy { DatabaseProvider.get(this).groupMemberDao() }
-    private val itemDao           by lazy { DatabaseProvider.get(this).itemDao() }
+    private val onlineRepo by lazy {
+        val isOnline = ConnectivityObserver(this).isOnlineFlow()
+        OnlineRepository(DatabaseProvider.get(this), OnlineWriteGuard(isOnline), RtdbClient())
+    }
 
 
     private lateinit var llNecessities: LinearLayout
@@ -126,31 +131,23 @@ class CreateGroupActivity : ComponentActivity() {
                     idAdmin = userId
                 )
 
-                withContext(Dispatchers.IO) {
-
-
-                    emergencyGroupDao.insert(group)
-
-
-                    groupMemberDao.insert(
-                        GroupMember(
-                            idGroup = groupId,
-                            idUser = userId
-                        )
+                val items = necessities.map { itemName ->
+                    Item(
+                        idItem = UUID.randomUUID().toString(),
+                        type = "necessity",
+                        name = itemName,
+                        description = null,
+                        idGroup = groupId
                     )
+                }
 
+                val result = withContext(Dispatchers.IO) {
+                    runCatching { onlineRepo.createGroup(group, userId, items) }
+                }
 
-                    necessities.forEach { itemName ->
-                        itemDao.insert(
-                            Item(
-                                idItem = UUID.randomUUID().toString(),
-                                type = "necessity",
-                                name = itemName,
-                                description = null,
-                                idGroup = groupId
-                            )
-                        )
-                    }
+                if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                    Toast.makeText(this@CreateGroupActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    return@launch
                 }
 
                 Toast.makeText(

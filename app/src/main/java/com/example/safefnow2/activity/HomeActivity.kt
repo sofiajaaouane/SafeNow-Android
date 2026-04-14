@@ -14,15 +14,19 @@ import androidx.lifecycle.lifecycleScope
 import com.example.safefnow2.R
 import com.example.safefnow2.ProfileActivity
 import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.data.sync.SyncScheduler
 import com.example.safefnow2.ui.sos.SosUiEvent
 import com.example.safefnow2.ui.sos.SosViewModel
 import com.example.safefnow2.util.AlertHelper
+import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.GroupPopupHelper
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -35,6 +39,12 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
         AlertHelper.ensureChannel(this)
+        SyncScheduler.enqueueOneTime(this)
+        ConnectivityObserver(this).isOnlineFlow()
+            .onEach { online ->
+                if (online) SyncScheduler.enqueueOneTime(this)
+            }
+            .launchIn(lifecycleScope)
 
         lifecycleScope.launch {
             sosViewModel.events.collect { event ->

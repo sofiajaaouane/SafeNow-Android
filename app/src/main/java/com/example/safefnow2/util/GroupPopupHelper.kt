@@ -2,6 +2,7 @@ package com.example.safefnow2.util
 
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.content.Context
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
@@ -12,6 +13,11 @@ import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.EmergencyGroup
 import com.example.safefnow2.data.local.entity.GroupMember
+import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
+import com.example.safefnow2.data.repository.OnlineRepository
+import com.example.safefnow2.util.ConnectivityObserver
+import com.example.safefnow2.util.OnlineWriteGuard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,6 +25,10 @@ import kotlinx.coroutines.withContext
 
 object GroupPopupHelper {
 
+    private fun onlineRepo(activity: Context): OnlineRepository {
+        val isOnline = ConnectivityObserver(activity).isOnlineFlow()
+        return OnlineRepository(DatabaseProvider.get(activity), OnlineWriteGuard(isOnline), RtdbClient())
+    }
 
     fun show(
         activity: AppCompatActivity,
@@ -41,23 +51,25 @@ object GroupPopupHelper {
 
         // Load members
         val membersContainer = popupView.findViewById<LinearLayout>(R.id.llPopupMembers)
-        loadMembers(activity, scope, group.idGroup, membersContainer)
+        loadMembers(activity, scope, group.idGroup, userId, membersContainer)
 
         // Toggle switch
         val switchActivate = popupView.findViewById<Switch>(R.id.switchActivateGroup)
         switchActivate.isChecked = group.sosGlobal == 1
         switchActivate.setOnCheckedChangeListener { _, isChecked ->
             scope.launch {
-                withContext(Dispatchers.IO) {
-                    DatabaseProvider.get(activity)
-                        .emergencyGroupDao()
-                        .update(group.copy(sosGlobal = if (isChecked) 1 else 0))
+                val result = withContext(Dispatchers.IO) {
+                    runCatching { onlineRepo(activity).setGroupActive(group, isChecked, userId) }
                 }
-                Toast.makeText(
-                    activity,
-                    if (isChecked) "Groupe activé" else "Groupe désactivé",
-                    Toast.LENGTH_SHORT
-                ).show()
+                if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                    Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(
+                        activity,
+                        if (isChecked) "Groupe activé" else "Groupe désactivé",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
 
@@ -73,12 +85,16 @@ object GroupPopupHelper {
                 .setMessage("Voulez-vous vraiment supprimer \"${group.name}\" ?")
                 .setPositiveButton("Supprimer") { _, _ ->
                     scope.launch {
-                        withContext(Dispatchers.IO) {
-                            DatabaseProvider.get(activity).emergencyGroupDao().delete(group)
+                        val result = withContext(Dispatchers.IO) {
+                            runCatching { onlineRepo(activity).deleteGroup(group.idGroup, userId) }
                         }
-                        dialog.dismiss()
-                        onGroupDeleted()
-                        Toast.makeText(activity, "Groupe supprimé", Toast.LENGTH_SHORT).show()
+                        if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                            Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                        } else {
+                            dialog.dismiss()
+                            onGroupDeleted()
+                            Toast.makeText(activity, "Groupe supprimé", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
                 .setNegativeButton("Annuler", null)
@@ -95,6 +111,7 @@ object GroupPopupHelper {
         activity: AppCompatActivity,
         scope: CoroutineScope,
         groupId: String,
+        currentUserId: String,
         container: LinearLayout?
     ) {
         if (container == null) return
@@ -137,15 +154,19 @@ object GroupPopupHelper {
                         .setMessage("Voulez-vous retirer $memberName du groupe ?")
                         .setPositiveButton("Retirer") { _, _ ->
                             scope.launch {
-                                withContext(Dispatchers.IO) {
-                                    DatabaseProvider.get(activity).groupMemberDao().delete(member)
+                                val result = withContext(Dispatchers.IO) {
+                                    runCatching { onlineRepo(activity).removeMember(groupId, member.idUser, currentUserId) }
                                 }
-                                loadMembers(activity, scope, groupId, container)
-                                Toast.makeText(
-                                    activity,
-                                    "$memberName retiré du groupe",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                                    Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    loadMembers(activity, scope, groupId, currentUserId, container)
+                                    Toast.makeText(
+                                        activity,
+                                        "$memberName retiré du groupe",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                         }
                         .setNegativeButton("Annuler", null)
@@ -197,21 +218,23 @@ object GroupPopupHelper {
                         val selected = availableFriends.filterIndexed { i, _ -> checked[i] }
                         if (selected.isEmpty()) return@launch
 
-                        withContext(Dispatchers.IO) {
-                            selected.forEach { friend ->
-                                DatabaseProvider.get(activity).groupMemberDao().insert(
-                                    GroupMember(idGroup = groupId, idUser = friend.idUser)
-                                )
+                        val result = withContext(Dispatchers.IO) {
+                            runCatching {
+                                selected.forEach { friend ->
+                                    onlineRepo(activity).addMember(groupId, friend.idUser, userId)
+                                }
                             }
                         }
-
-                        loadMembers(activity, scope, groupId, membersContainer)
-
-                        Toast.makeText(
-                            activity,
-                            "${selected.size} membre(s) ajouté(s)",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                            Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                        } else {
+                            loadMembers(activity, scope, groupId, userId, membersContainer)
+                            Toast.makeText(
+                                activity,
+                                "${selected.size} membre(s) ajouté(s)",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
                 .setNegativeButton("Annuler", null)

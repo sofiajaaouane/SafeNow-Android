@@ -11,13 +11,18 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.remote.RtdbPaths
+import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.PasswordHasher
 import com.example.safefnow2.util.SessionManager
+import com.example.safefnow2.util.ConnectivityObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -69,7 +74,23 @@ class LoginActivity : ComponentActivity() {
             }
             scope.launch {
                 val user = withContext(Dispatchers.IO) {
-                    DatabaseProvider.get(this@LoginActivity).userDao().getByPhone(phone)
+                    val db = DatabaseProvider.get(this@LoginActivity)
+                    val local = db.userDao().getByPhone(phone)
+                    if (local != null) return@withContext local
+
+                    val online = ConnectivityObserver(this@LoginActivity).isOnlineFlow().first()
+                    if (!online) return@withContext null
+
+                    val rtdb = RtdbClient()
+                    val userIdSnap = rtdb.get(RtdbPaths.userByPhone(phone))
+                    val userId = userIdSnap.getValue(String::class.java) ?: return@withContext null
+                    val userSnap = rtdb.get(RtdbPaths.user(userId))
+                    val remoteUser = userSnap.getValue(com.example.safefnow2.data.local.entity.User::class.java)
+                    if (remoteUser != null) {
+                        db.userDao().insert(remoteUser)
+                        runCatching { SyncRepository(db, rtdb).syncNow(remoteUser.idUser) }
+                    }
+                    remoteUser
                 }
                 if (user == null || !PasswordHasher.verify(password, user.password)) {
                     Toast.makeText(this@LoginActivity, "Numero ou mot de passe incorrect", Toast.LENGTH_SHORT).show()

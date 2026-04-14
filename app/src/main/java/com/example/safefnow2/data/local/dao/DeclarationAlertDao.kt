@@ -31,4 +31,7 @@ interface DeclarationAlertDao {
 
     @Query("SELECT * FROM declaration_alert ORDER BY created_at DESC")
     fun getAllFlow(): Flow<List<DeclarationAlert>>
+
+    @Query("DELETE FROM declaration_alert WHERE id_user = :idUser")
+    suspend fun deleteByUserId(idUser: String)
 }

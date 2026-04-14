@@ -14,6 +14,11 @@ import androidx.core.content.ContextCompat
 import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.User
+import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
+import com.example.safefnow2.data.repository.OnlineRepository
+import com.example.safefnow2.util.ConnectivityObserver
+import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +31,10 @@ import java.util.UUID
 class PermissionsActivity : ComponentActivity() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val onlineRepo by lazy {
+        val isOnline = ConnectivityObserver(this).isOnlineFlow()
+        OnlineRepository(DatabaseProvider.get(this), OnlineWriteGuard(isOnline), RtdbClient())
+    }
 
     private var pendingPermissionCheckId: Int? = null
 
@@ -144,8 +153,10 @@ class PermissionsActivity : ComponentActivity() {
                 description = null,
                 bloodType = null
             )
-            withContext(Dispatchers.IO) {
-                DatabaseProvider.get(this@PermissionsActivity).userDao().insert(user)
+            val result = withContext(Dispatchers.IO) { runCatching { onlineRepo.createAccount(user) } }
+            if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                Toast.makeText(this@PermissionsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                return@launch
             }
             SessionManager.setCurrentUserId(this@PermissionsActivity, idUser)
             startActivity(
