@@ -15,6 +15,7 @@ import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.remote.RtdbPaths
 import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
 import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.util.ConnectivityObserver
@@ -25,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -154,7 +156,55 @@ class PermissionsActivity : ComponentActivity() {
                 description = null,
                 bloodType = null
             )
-            val result = withContext(Dispatchers.IO) { runCatching { onlineRepo.createAccount(user) } }
+
+            val precheck = withContext(Dispatchers.IO) {
+                val db = DatabaseProvider.get(this@PermissionsActivity)
+                val normalizedEmail = email?.trim()?.lowercase()?.ifEmpty { null }
+
+                if (db.userDao().getByPhone(phone) != null) return@withContext "PHONE_TAKEN"
+                if (normalizedEmail != null && db.userDao().getByEmail(normalizedEmail) != null) return@withContext "EMAIL_TAKEN"
+
+                val online = ConnectivityObserver(this@PermissionsActivity).isOnlineFlow().first()
+                if (!online) return@withContext "OFFLINE"
+
+                val rtdb = RtdbClient()
+                val digits = phone.filter { it.isDigit() }
+                val byFull = rtdb.get(RtdbPaths.userByPhone(phone)).getValue(String::class.java)
+                val byDigits = if (digits.isNotEmpty()) {
+                    rtdb.get(RtdbPaths.userByPhone(digits)).getValue(String::class.java)
+                } else null
+                if (!byFull.isNullOrEmpty() || !byDigits.isNullOrEmpty()) return@withContext "PHONE_TAKEN"
+
+                if (normalizedEmail != null) {
+                    val usersSnap = rtdb.get("users")
+                    val exists = usersSnap.children.any { child ->
+                        val remoteEmail = child.child("email").getValue(String::class.java)
+                            ?.trim()
+                            ?.lowercase()
+                            .orEmpty()
+                        remoteEmail == normalizedEmail
+                    }
+                    if (exists) return@withContext "EMAIL_TAKEN"
+                }
+                null
+            }
+
+            when (precheck) {
+                "OFFLINE" -> {
+                    Toast.makeText(this@PermissionsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                "PHONE_TAKEN" -> {
+                    Toast.makeText(this@PermissionsActivity, "Ce numero est deja utilise", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                "EMAIL_TAKEN" -> {
+                    Toast.makeText(this@PermissionsActivity, "Cet email est deja utilise", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+            }
+
+            val result = withContext(Dispatchers.IO) { runCatching { onlineRepo.createAccount(user.copy(email = email?.trim()?.lowercase()?.ifEmpty { null })) } }
             if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
                 Toast.makeText(this@PermissionsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
                 return@launch
