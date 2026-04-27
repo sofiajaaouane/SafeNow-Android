@@ -118,14 +118,23 @@ object GroupPopupHelper {
                     me?.let { "${it.prenom} ${it.nom}".trim() }?.ifEmpty { "SafeNow" } ?: "SafeNow"
                 }
                 val result = withContext(Dispatchers.IO) {
-                    runCatching { onlineRepo(activity).sendGroupSos(group.idGroup, senderName, group.idAdmin, userId) }
+                    runCatching {
+                        onlineRepo(activity).sendGroupSos(
+                            groupId = group.idGroup,
+                            senderName = senderName,
+                            groupAdminId = group.idAdmin,
+                            currentUserId = userId,
+                            senderLocation = locationStr,
+                            senderLat = location?.latitude,
+                            senderLng = location?.longitude,
+                        )
+                    }
                 }
                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
                     Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
                 } else if (result.isFailure && result.exceptionOrNull()?.message == "not_admin") {
                     Toast.makeText(activity, "Seul l'admin peut lancer SOS", Toast.LENGTH_SHORT).show()
                 } else {
-                    saveAlertToLocalHistory(activity, scope, userId, "SOS GROUPE", "GROUP", group.name, locationStr)
                     Toast.makeText(activity, "SOS envoyé au groupe", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -169,32 +178,6 @@ object GroupPopupHelper {
             } catch (e: Exception) {
                 "Lat: ${"%.4f".format(location.latitude)}, Lon: ${"%.4f".format(location.longitude)}"
             }
-        }
-    }
-
-    private fun saveAlertToLocalHistory(context: Context, scope: CoroutineScope, userId: String, typeStr: String, targetType: String, targetName: String?, location: String?) {
-        scope.launch(Dispatchers.IO) {
-            val db = DatabaseProvider.get(context)
-            val alertId = UUID.randomUUID().toString()
-            val now = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-            
-            val alert = Alert(
-                idAlert = alertId,
-                createdAt = now,
-                typeAlert = typeStr,
-                targetType = targetType,
-                targetName = targetName
-            )
-            db.alertDao().insert(alert)
-            
-            val decl = DeclarationAlert(
-                idUser = userId,
-                idAlert = alertId,
-                createdAt = now,
-                localisation = location,
-                status = "SENT"
-            )
-            db.declarationAlertDao().insert(decl)
         }
     }
 

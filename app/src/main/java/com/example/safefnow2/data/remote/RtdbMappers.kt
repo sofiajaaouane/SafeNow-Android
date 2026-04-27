@@ -9,8 +9,12 @@ import com.example.safefnow2.data.local.entity.User
 import com.google.firebase.database.DataSnapshot
 
 private fun DataSnapshot.mapValue(): Map<String, Any?> {
+    val v = value ?: return emptyMap()
+    if (v is Map<*, *>) {
+        return v.entries.associate { (k, any) -> k?.toString().orEmpty() to any }
+    }
     @Suppress("UNCHECKED_CAST")
-    return (value as? Map<String, Any?>) ?: emptyMap()
+    return (v as? Map<String, Any?>) ?: emptyMap()
 }
 
 private fun Map<String, Any?>.str(key: String): String? = (this[key] as? String)?.trim()
@@ -96,10 +100,10 @@ fun DataSnapshot.toItem(): Item? {
     )
 }
 
-fun DataSnapshot.toDeclarationAlert(): DeclarationAlert? {
+fun DataSnapshot.toDeclarationAlert(fallbackIdUser: String? = null): DeclarationAlert? {
     val m = mapValue()
-    val idUser = m.strAny("idUser", "id_user") ?: return null
-    val idAlert = m.strAny("idAlert", "id_alert") ?: return null
+    val idUser = m.strAny("idUser", "id_user") ?: fallbackIdUser?.takeIf { it.isNotBlank() } ?: return null
+    val idAlert = m.strAny("idAlert", "id_alert") ?: key?.takeIf { it.isNotBlank() } ?: return null
     return DeclarationAlert(
         idUser = idUser,
         idAlert = idAlert,
@@ -113,12 +117,25 @@ fun DataSnapshot.toDeclarationAlert(): DeclarationAlert? {
 
 fun DataSnapshot.toAlert(): Alert? {
     val m = mapValue()
-    val idAlert = m.strAny("idAlert", "id_alert") ?: return null
+    val idAlert = m.strAny("idAlert", "id_alert") ?: key?.takeIf { it.isNotBlank() } ?: return null
     val typeAlert = m.strAny("typeAlert", "type_alert") ?: return null
     return Alert(
         idAlert = idAlert,
         createdAt = m.strAny("createdAt", "created_at") ?: m.numStr("createdAt") ?: m.numStr("created_at"),
         typeAlert = typeAlert,
+        senderId = m.strAny("senderId", "sender_id"),
+        senderName = m.strAny("senderName", "sender_name"),
+        targetType = m.strAny("targetType", "target_type"),
+        targetName = m.strAny("targetName", "target_name"),
+        targetId = m.strAny("targetId", "target_id"),
+        senderLocation = m.strAny("senderLocation", "sender_location", "localisation"),
+        senderLatitude = m.dbl("senderLatitude") ?: m.dbl("sender_latitude") ?: m.dbl("latitude"),
+        senderLongitude = m.dbl("senderLongitude") ?: m.dbl("sender_longitude") ?: m.dbl("longitude"),
+        stoppedById = m.strAny("stoppedById", "stopped_by_id"),
+        stoppedAt = m.strAny("stoppedAt", "stopped_at"),
+        stoppedLocation = m.strAny("stoppedLocation", "stopped_location"),
+        stoppedLatitude = m.dbl("stoppedLatitude") ?: m.dbl("stopped_latitude"),
+        stoppedLongitude = m.dbl("stoppedLongitude") ?: m.dbl("stopped_longitude"),
     )
 }
 

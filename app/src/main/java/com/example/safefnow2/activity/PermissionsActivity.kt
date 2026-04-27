@@ -93,11 +93,11 @@ class PermissionsActivity : ComponentActivity() {
         updateCheckboxStates(checkGps, checkNotification, checkPhone)
 
         findViewById<Button>(R.id.btnContinuePermissions).setOnClickListener {
-            if (!RequiredPermissions.allGranted(this)) {
-                Toast.makeText(this, "Activez les 3 permissions", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
             if (intent.getBooleanExtra(EXTRA_REQUEST_ONLY, false)) {
+                if (!RequiredPermissions.allGranted(this)) {
+                    Toast.makeText(this, "Activez les 3 permissions", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
                 goHome()
             } else {
                 createAccountAndGoHome()
@@ -144,10 +144,6 @@ class PermissionsActivity : ComponentActivity() {
     }
 
     private fun createAccountAndGoHome() {
-        if (!RequiredPermissions.allGranted(this)) {
-            Toast.makeText(this, "Activez les 3 permissions", Toast.LENGTH_SHORT).show()
-            return
-        }
         val phone = intent.getStringExtra(SignUpStep1Activity.EXTRA_PHONE) ?: ""
         val passwordHash = intent.getStringExtra(SignUpStep2Activity.EXTRA_PASSWORD_HASH) ?: ""
         val email = intent.getStringExtra(SignUpStep2Activity.EXTRA_EMAIL)

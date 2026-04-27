@@ -12,7 +12,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.safefnow2.R
@@ -21,14 +20,17 @@ import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.Disease
 import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.data.remote.SosRepository
-import com.example.safefnow2.ui.sos.SosUiEvent
-import com.example.safefnow2.ui.sos.SosViewModel
-import com.example.safefnow2.util.AlertHistoryHelper
+import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
+import com.example.safefnow2.data.repository.OnlineRepository
+import com.example.safefnow2.util.ConnectivityObserver
+import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -38,8 +40,6 @@ class ContactDetailsActivity : ComponentActivity() {
     companion object {
         const val EXTRA_CONTACT_USER_ID = "extra_contact_user_id"
     }
-
-    private val sosViewModel: SosViewModel by viewModels()
 
     private var contactUser: User? = null
     private var contactDiseases: List<Disease> = emptyList()
@@ -59,20 +59,6 @@ class ContactDetailsActivity : ComponentActivity() {
         val btnInfo = findViewById<Button>(R.id.contactInfoButton)
 
         backButton.setOnClickListener { finish() }
-
-        lifecycleScope.launch {
-            sosViewModel.events.collect { event ->
-                val message = when (event) {
-                    is SosUiEvent.Sent -> getString(R.string.toast_sos_sent)
-                    is SosUiEvent.PeerMissing -> getString(R.string.toast_sos_peer_missing)
-                    is SosUiEvent.Error -> when (event.message) {
-                        "contact_device_unknown" -> getString(R.string.toast_sos_contact_no_device)
-                        else -> event.message.ifEmpty { "Erreur SOS" }
-                    }
-                }
-                Toast.makeText(this@ContactDetailsActivity, message, Toast.LENGTH_SHORT).show()
-            }
-        }
 
         val contactUserId = intent.getStringExtra(EXTRA_CONTACT_USER_ID)
         if (contactUserId == null) {
@@ -116,22 +102,41 @@ class ContactDetailsActivity : ComponentActivity() {
                 } else null
 
                 val address = if (location != null) {
-                    AlertHistoryHelper.getReadableAddress(this@ContactDetailsActivity, location)
+                    com.example.safefnow2.util.AlertHistoryHelper.getReadableAddress(this@ContactDetailsActivity, location)
                 } else "Position inconnue"
 
-                // 2. Enregistrer dans l'historique local
-                AlertHistoryHelper.saveAlertToLocalHistory(
-                    context = this@ContactDetailsActivity,
-                    userId = selfId,
-                    typeStr = "SOS CONTACT",
-                    targetType = "CONTACT",
-                    targetName = contactLabel,
-                    targetId = user.idUser,
-                    location = address
-                )
+                val isOnline = ConnectivityObserver(this@ContactDetailsActivity).isOnlineFlow().first()
+                if (!isOnline) {
+                    Toast.makeText(this@ContactDetailsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
 
-                // 3. Envoyer le SOS via le serveur
-                sosViewModel.sendSosToContactPhone(user.numTel, senderName, contactLabel)
+                val repo = OnlineRepository(
+                    DatabaseProvider.get(this@ContactDetailsActivity),
+                    OnlineWriteGuard(ConnectivityObserver(this@ContactDetailsActivity).isOnlineFlow()),
+                    RtdbClient(),
+                )
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        repo.sendContactSos(
+                            senderId = selfId,
+                            receiverId = user.idUser,
+                            senderName = senderName,
+                            receiverName = contactLabel,
+                            senderLocation = address,
+                            senderLat = location?.latitude,
+                            senderLng = location?.longitude,
+                        )
+                    }
+                }
+
+                if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
+                    Toast.makeText(this@ContactDetailsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                } else if (result.isFailure) {
+                    Toast.makeText(this@ContactDetailsActivity, "Erreur SOS", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@ContactDetailsActivity, getString(R.string.toast_sos_sent), Toast.LENGTH_SHORT).show()
+                }
             }
         }
 

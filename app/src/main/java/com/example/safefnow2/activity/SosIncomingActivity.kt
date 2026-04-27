@@ -16,6 +16,7 @@ import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbPaths
+import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.util.SessionManager
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -77,18 +78,65 @@ class SosIncomingActivity : ComponentActivity() {
             val address = if (location != null) getReadableAddress(location) else "Position inconnue"
             val stopTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
 
-            // 2. Mettre à jour la base de données locale
+            // 2. Mettre à jour la base de données locale + RTDB (RECEIVED = STOP click)
             withContext(Dispatchers.IO) {
                 val db = DatabaseProvider.get(this@SosIncomingActivity)
                 val alert = db.alertDao().getById(sosId)
-                if (alert != null) {
-                    val updated = alert.copy(
-                        stoppedById = userId,
-                        stoppedAt = stopTime,
-                        stoppedLocation = address
+                val updatedLocal =
+                    if (alert != null) {
+                        alert.copy(
+                            stoppedById = userId,
+                            stoppedAt = stopTime,
+                            stoppedLocation = address,
+                            stoppedLatitude = location?.latitude,
+                            stoppedLongitude = location?.longitude,
+                        )
+                    } else {
+                        com.example.safefnow2.data.local.entity.Alert(
+                            idAlert = sosId,
+                            createdAt = stopTime,
+                            typeAlert = "SOS",
+                            targetType = "RECEIVED",
+                            stoppedById = userId,
+                            stoppedAt = stopTime,
+                            stoppedLocation = address,
+                            stoppedLatitude = location?.latitude,
+                            stoppedLongitude = location?.longitude,
+                        )
+                    }
+                db.alertDao().insert(updatedLocal)
+
+                db.declarationAlertDao().insert(
+                    com.example.safefnow2.data.local.entity.DeclarationAlert(
+                        idUser = userId,
+                        idAlert = sosId,
+                        localisation = address,
+                        latitude = location?.latitude,
+                        longitude = location?.longitude,
+                        status = "RECEIVED",
+                        createdAt = stopTime,
                     )
-                    db.alertDao().update(updated)
-                }
+                )
+
+                val updates = mapOf(
+                    "${RtdbPaths.alert(sosId)}/stoppedById" to userId,
+                    "${RtdbPaths.alert(sosId)}/stoppedAt" to stopTime,
+                    "${RtdbPaths.alert(sosId)}/stoppedLocation" to address,
+                    "${RtdbPaths.alert(sosId)}/stoppedLatitude" to location?.latitude,
+                    "${RtdbPaths.alert(sosId)}/stoppedLongitude" to location?.longitude,
+                    RtdbPaths.declarationAlert(userId, sosId) to mapOf(
+                        "idUser" to userId,
+                        "idAlert" to sosId,
+                        "status" to "RECEIVED",
+                        "createdAt" to stopTime,
+                        "localisation" to address,
+                        "latitude" to location?.latitude,
+                        "longitude" to location?.longitude,
+                        "updatedAt" to rtdb.serverTimestamp(),
+                    ),
+                )
+                runCatching { rtdb.updateChildren("", updates) }
+                runCatching { SyncRepository(db, rtdb).syncNow(userId) }
             }
 
             // 3. Effacer sur Firebase

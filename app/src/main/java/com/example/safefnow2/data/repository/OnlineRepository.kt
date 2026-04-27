@@ -2,6 +2,8 @@ package com.example.safefnow2.data.repository
 
 import com.example.safefnow2.data.local.SafeNowDatabase
 import com.example.safefnow2.data.local.entity.Amitier
+import com.example.safefnow2.data.local.entity.Alert
+import com.example.safefnow2.data.local.entity.DeclarationAlert
 import com.example.safefnow2.data.local.entity.Disease
 import com.example.safefnow2.data.local.entity.EmergencyGroup
 import com.example.safefnow2.data.local.entity.GroupMember
@@ -11,6 +13,9 @@ import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbPaths
 import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.util.OnlineWriteGuard
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 class OnlineRepository(
@@ -32,6 +37,118 @@ class OnlineRepository(
             }
             else -> false
         }
+    }
+
+    private fun nowString(): String {
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+    }
+
+    private suspend fun createAlertAndSenderDeclaration(
+        alertId: String,
+        senderId: String,
+        senderName: String,
+        typeAlert: String,
+        targetType: String,
+        targetId: String?,
+        targetName: String?,
+        senderLocation: String?,
+        senderLat: Double?,
+        senderLng: Double?,
+    ) {
+        if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
+        val now = nowString()
+
+        val alertMap = mapOf(
+            "idAlert" to alertId,
+            "typeAlert" to typeAlert,
+            "senderId" to senderId,
+            "senderName" to senderName,
+            "targetType" to targetType,
+            "targetId" to targetId,
+            "targetName" to targetName,
+            "createdAt" to now,
+            "senderLocation" to senderLocation,
+            "senderLatitude" to senderLat,
+            "senderLongitude" to senderLng,
+            "updatedAt" to rtdb.serverTimestamp(),
+        )
+
+        val declMap = mapOf(
+            "idUser" to senderId,
+            "idAlert" to alertId,
+            "status" to "SENT",
+            "createdAt" to now,
+            "localisation" to senderLocation,
+            "latitude" to senderLat,
+            "longitude" to senderLng,
+            "updatedAt" to rtdb.serverTimestamp(),
+        )
+
+        val updates = mapOf(
+            RtdbPaths.alert(alertId) to alertMap,
+            RtdbPaths.declarationAlert(senderId, alertId) to declMap,
+        )
+        rtdb.updateChildren("", updates)
+
+        database.alertDao().insert(
+            Alert(
+                idAlert = alertId,
+                createdAt = now,
+                typeAlert = typeAlert,
+                senderId = senderId,
+                senderName = senderName,
+                targetType = targetType,
+                targetId = targetId,
+                targetName = targetName,
+                senderLocation = senderLocation,
+                senderLatitude = senderLat,
+                senderLongitude = senderLng,
+            )
+        )
+        database.declarationAlertDao().insert(
+            DeclarationAlert(
+                idUser = senderId,
+                idAlert = alertId,
+                localisation = senderLocation,
+                latitude = senderLat,
+                longitude = senderLng,
+                status = "SENT",
+                createdAt = now,
+            )
+        )
+    }
+
+    suspend fun sendContactSos(
+        senderId: String,
+        receiverId: String,
+        senderName: String,
+        receiverName: String,
+        senderLocation: String?,
+        senderLat: Double?,
+        senderLng: Double?,
+    ) {
+        if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
+        val alertId = UUID.randomUUID().toString()
+        createAlertAndSenderDeclaration(
+            alertId = alertId,
+            senderId = senderId,
+            senderName = senderName,
+            typeAlert = "SOS CONTACT",
+            targetType = "CONTACT",
+            targetId = receiverId,
+            targetName = receiverName,
+            senderLocation = senderLocation,
+            senderLat = senderLat,
+            senderLng = senderLng,
+        )
+
+        val updates = mapOf(
+            RtdbPaths.userSosId(receiverId) to alertId,
+            RtdbPaths.userSosSenderName(receiverId) to senderName,
+            RtdbPaths.userSosCreatedAt(receiverId) to rtdb.serverTimestamp(),
+        )
+        rtdb.updateChildren("", updates)
+        syncRepo.syncNow(senderId)
     }
 
     suspend fun ensureUserInRtdb(user: User) {
@@ -159,7 +276,15 @@ class OnlineRepository(
         syncRepo.syncNow(currentUserId)
     }
 
-    suspend fun sendGroupSos(groupId: String, senderName: String, groupAdminId: String, currentUserId: String) {
+    suspend fun sendGroupSos(
+        groupId: String,
+        senderName: String,
+        groupAdminId: String,
+        currentUserId: String,
+        senderLocation: String?,
+        senderLat: Double?,
+        senderLng: Double?,
+    ) {
         if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
         if (currentUserId != groupAdminId) throw IllegalStateException("not_admin")
         val membersSnap = rtdb.get(RtdbPaths.groupMembers(groupId))
@@ -167,6 +292,19 @@ class OnlineRepository(
         if (memberIds.isEmpty()) return
 
         val sosId = UUID.randomUUID().toString()
+        val groupName = database.emergencyGroupDao().getById(groupId)?.name
+        createAlertAndSenderDeclaration(
+            alertId = sosId,
+            senderId = currentUserId,
+            senderName = senderName,
+            typeAlert = "SOS GROUPE",
+            targetType = "GROUP",
+            targetId = groupId,
+            targetName = groupName,
+            senderLocation = senderLocation,
+            senderLat = senderLat,
+            senderLng = senderLng,
+        )
         val updates = mutableMapOf<String, Any?>()
         memberIds.filter { it != currentUserId }.forEach { uid ->
             updates[RtdbPaths.userSosId(uid)] = sosId
@@ -176,9 +314,16 @@ class OnlineRepository(
         if (updates.isNotEmpty()) {
             rtdb.updateChildren("", updates)
         }
+        syncRepo.syncNow(currentUserId)
     }
 
-    suspend fun sendGlobalSosToActiveGroups(currentUserId: String, senderName: String): Int {
+    suspend fun sendGlobalSosToActiveGroups(
+        currentUserId: String,
+        senderName: String,
+        senderLocation: String?,
+        senderLat: Double?,
+        senderLng: Double?,
+    ): Int {
         if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
         val membershipSnap = rtdb.get(RtdbPaths.groupMembersByUser(currentUserId))
         val groupIds = membershipSnap.children.mapNotNull { it.key }.filter { it.isNotBlank() }
@@ -206,8 +351,25 @@ class OnlineRepository(
                 }
         }
 
+        if (receivers.isNotEmpty()) {
+            createAlertAndSenderDeclaration(
+                alertId = sosId,
+                senderId = currentUserId,
+                senderName = senderName,
+                typeAlert = "SOS GLOBAL",
+                targetType = "GLOBAL",
+                targetId = null,
+                targetName = null,
+                senderLocation = senderLocation,
+                senderLat = senderLat,
+                senderLng = senderLng,
+            )
+        }
         if (updates.isNotEmpty()) {
             rtdb.updateChildren("", updates)
+        }
+        if (receivers.isNotEmpty()) {
+            syncRepo.syncNow(currentUserId)
         }
         return receivers.size
     }

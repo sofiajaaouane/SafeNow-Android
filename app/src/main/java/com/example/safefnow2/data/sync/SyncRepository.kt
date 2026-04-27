@@ -92,18 +92,21 @@ class SyncRepository(
 
     private suspend fun syncDeclarationAlerts(userId: String) {
         val declSnap = rtdb.get(RtdbPaths.declarationAlerts(userId))
-        database.declarationAlertDao().deleteByUserId(userId)
 
         for (child in declSnap.children) {
-            val decl = child.toDeclarationAlert() ?: continue
-            database.declarationAlertDao().insert(decl)
+            val alertId = child.key?.takeIf { it.isNotBlank() } ?: continue
 
-            val alertId = decl.idAlert
             val alertSnap = rtdb.get(RtdbPaths.alert(alertId))
             val alert = alertSnap.toAlert()
             if (alert != null) {
                 database.alertDao().insert(alert)
             }
+
+            val decl = child.toDeclarationAlert(fallbackIdUser = userId) ?: continue
+            val resolvedAlert = alert ?: database.alertDao().getById(alertId)
+            if (resolvedAlert == null) continue
+
+            database.declarationAlertDao().insert(decl)
         }
     }
 }

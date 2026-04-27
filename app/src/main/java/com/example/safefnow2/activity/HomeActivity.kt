@@ -133,7 +133,13 @@ class HomeActivity : AppCompatActivity() {
                             DatabaseProvider.get(this@HomeActivity),
                             OnlineWriteGuard(ConnectivityObserver(this@HomeActivity).isOnlineFlow()),
                             RtdbClient()
-                        ).sendGlobalSosToActiveGroups(userId, cachedSenderName)
+                        ).sendGlobalSosToActiveGroups(
+                            currentUserId = userId,
+                            senderName = cachedSenderName,
+                            senderLocation = locationStr,
+                            senderLat = location?.latitude,
+                            senderLng = location?.longitude,
+                        )
                     }
                     withContext(Dispatchers.Main) {
                         if (result.isFailure) {
@@ -148,7 +154,6 @@ class HomeActivity : AppCompatActivity() {
                             if (count <= 0) {
                                 Toast.makeText(this@HomeActivity, "Aucun groupe SOS activé", Toast.LENGTH_SHORT).show()
                             } else {
-                                saveAlertToLocalHistory(userId, "SOS GLOBAL", "GLOBAL", null, null, locationStr)
                                 Toast.makeText(this@HomeActivity, getString(R.string.toast_sos_sent), Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -248,33 +253,6 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveAlertToLocalHistory(userId: String, typeStr: String, targetType: String, targetName: String?, targetId: String?, location: String? = null) {
-        scope.launch(Dispatchers.IO) {
-            val db = DatabaseProvider.get(this@HomeActivity)
-            val alertId = UUID.randomUUID().toString()
-            val now = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-            
-            val alert = Alert(
-                idAlert = alertId,
-                createdAt = now,
-                typeAlert = typeStr,
-                targetType = targetType,
-                targetName = targetName,
-                targetId = targetId
-            )
-            db.alertDao().insert(alert)
-            
-            val decl = DeclarationAlert(
-                idUser = userId,
-                idAlert = alertId,
-                createdAt = now,
-                localisation = location,
-                status = "SENT"
-            )
-            db.declarationAlertDao().insert(decl)
-        }
-    }
-
     private fun startSosIdListenerWhileOpen() {
         val userId = SessionManager.getCurrentUserId(this)?.trim().orEmpty()
         if (userId.isEmpty()) return
@@ -292,42 +270,9 @@ class HomeActivity : AppCompatActivity() {
                 val sender = runCatching {
                     rtdb.get(RtdbPaths.userSosSenderName(userId)).getValue(String::class.java)
                 }.getOrNull()?.trim().orEmpty()
-
-                saveReceivedAlertToHistory(sender, sosId)
-
                 AlertHelper.startSosIncomingActivity(this, sender, sosId)
             }
             .launchIn(lifecycleScope)
-    }
-
-    private fun saveReceivedAlertToHistory(senderName: String, sosId: String) {
-        scope.launch(Dispatchers.IO) {
-            val db = DatabaseProvider.get(this@HomeActivity)
-            val now = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-            
-            val tempUserId = "received_$senderName"
-            if (db.userDao().getById(tempUserId) == null) {
-                db.userDao().insert(User(tempUserId, senderName, "", "", ""))
-            }
-
-            val alert = Alert(
-                idAlert = sosId,
-                createdAt = now,
-                typeAlert = "SOS REÇU",
-                targetType = "RECEIVED",
-                targetName = senderName
-            )
-            db.alertDao().insert(alert)
-            
-            val decl = DeclarationAlert(
-                idUser = tempUserId,
-                idAlert = sosId,
-                createdAt = now,
-                localisation = "Position de l'expéditeur",
-                status = "RECEIVED"
-            )
-            db.declarationAlertDao().insert(decl)
-        }
     }
 
     private fun renderGroupsStories(container: LinearLayout?, groups: List<com.example.safefnow2.data.local.entity.EmergencyGroup>, userId: String) {

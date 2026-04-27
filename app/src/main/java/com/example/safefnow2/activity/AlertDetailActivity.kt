@@ -39,13 +39,17 @@ class AlertDetailActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val db = DatabaseProvider.get(this@AlertDetailActivity)
             val alert = withContext(Dispatchers.IO) { db.alertDao().getById(alertId) }
-            val sender = withContext(Dispatchers.IO) { db.userDao().getById(userId) }
             
             val declaration = withContext(Dispatchers.IO) { 
                 db.declarationAlertDao().getById(userId, alertId) 
             }
 
-            if (alert != null && sender != null) {
+            val sender = withContext(Dispatchers.IO) {
+                val sid = alert?.senderId
+                if (sid.isNullOrEmpty()) null else db.userDao().getById(sid)
+            }
+
+            if (alert != null) {
                 displaySenderInfo(sender, alert, declaration?.localisation)
                 loadDestinataires(alert)
                 
@@ -77,17 +81,17 @@ class AlertDetailActivity : AppCompatActivity() {
                         }
                     }
                 }
-                "RECEIVED" -> {
-                    // Pour un SOS reçu, les destinataires sont l'expéditeur et moi
-                    alert.targetName?.let { name ->
-                        recipients.add(User("id_temp", name, "Expéditeur", "", ""))
-                    }
-                }
                 "GLOBAL" -> {
                     // SOS Global envoyé à tous mes contacts acceptés
                     val currentUserId = com.example.safefnow2.util.SessionManager.getCurrentUserId(this@AlertDetailActivity)
                     if (currentUserId != null) {
                         recipients.addAll(db.amitierDao().getAcceptedFriends(currentUserId))
+                    }
+                }
+                "CONTACT" -> {
+                    val id = alert.targetId
+                    if (!id.isNullOrEmpty()) {
+                        db.userDao().getById(id)?.let { recipients.add(it) }
                     }
                 }
             }
@@ -112,8 +116,10 @@ class AlertDetailActivity : AppCompatActivity() {
         }
     }
 
-    private fun displaySenderInfo(user: User, alert: Alert, location: String?) {
-        findViewById<TextView>(R.id.tvDetailSenderName).text = "${user.prenom} ${user.nom}"
+    private fun displaySenderInfo(user: User?, alert: Alert, location: String?) {
+        findViewById<TextView>(R.id.tvDetailSenderName).text = user?.let { "${it.prenom} ${it.nom}".trim() }
+            ?: alert.senderName?.takeIf { it.isNotBlank() }
+            ?: "Utilisateur inconnu"
         
         val typeStr = when (alert.targetType) {
             "GROUP" -> "SOS GROUPE (${alert.targetName})"
@@ -123,7 +129,11 @@ class AlertDetailActivity : AppCompatActivity() {
         }
         findViewById<TextView>(R.id.tvDetailAlertType).text = typeStr
         findViewById<TextView>(R.id.tvDetailStartTime).text = alert.createdAt
-        findViewById<TextView>(R.id.tvDetailStartLocation).text = location ?: "Inconnue"
+        val coords = if (alert.senderLatitude != null && alert.senderLongitude != null) {
+            " (${String.format("%.4f", alert.senderLatitude)}, ${String.format("%.4f", alert.senderLongitude)})"
+        } else ""
+        val loc = location ?: alert.senderLocation
+        findViewById<TextView>(R.id.tvDetailStartLocation).text = (loc ?: "Inconnue") + coords
     }
 
     private fun displayStopperInfo(user: User?, alert: Alert) {

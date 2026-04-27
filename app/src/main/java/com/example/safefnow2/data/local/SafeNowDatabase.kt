@@ -30,7 +30,7 @@ import com.example.safefnow2.data.local.entity.User
                         EmergencyGroup::class,
                         GroupMember::class,
                         Item::class],
-        version = 3,
+        version = 4,
         exportSchema = false
 )
 abstract class SafeNowDatabase : RoomDatabase() {
