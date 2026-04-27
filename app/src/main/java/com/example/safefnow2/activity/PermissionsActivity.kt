@@ -107,6 +107,16 @@ class PermissionsActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        scope.launch {
+            val online = ConnectivityObserver(this@PermissionsActivity).isOnlineFlow().first()
+            if (!online) {
+                startActivity(Intent(this@PermissionsActivity, NoInternetActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                })
+                finish()
+                return@launch
+            }
+        }
         val checkGps = findViewById<CheckBox>(R.id.checkGps)
         val checkNotification = findViewById<CheckBox>(R.id.checkNotification)
         val checkPhone = findViewById<CheckBox>(R.id.checkPhone)

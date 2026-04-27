@@ -48,6 +48,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -360,13 +361,24 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (!RequiredPermissions.allGranted(this)) {
-            startActivity(Intent(this, PermissionsActivity::class.java).apply {
-                putExtra(PermissionsActivity.EXTRA_REQUEST_ONLY, true)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            })
-            finish()
-            return
+        lifecycleScope.launch {
+            val online = ConnectivityObserver(this@HomeActivity).isOnlineFlow().first()
+            if (!online) {
+                startActivity(Intent(this@HomeActivity, NoInternetActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                })
+                finish()
+                return@launch
+            }
+
+            if (!RequiredPermissions.allGranted(this@HomeActivity)) {
+                startActivity(Intent(this@HomeActivity, PermissionsActivity::class.java).apply {
+                    putExtra(PermissionsActivity.EXTRA_REQUEST_ONLY, true)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                })
+                finish()
+                return@launch
+            }
         }
     }
 

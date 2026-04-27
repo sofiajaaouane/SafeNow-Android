@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F4F5F7"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CONNECTION TO WIFI REQUIRED"
+        android:textColor="#111111"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="14dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Please connect to the internet to continue."
+        android:textColor="#777777"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:layout_marginBottom="22dp" />
+
+    <Button
+        android:id="@+id/btnRefreshInternet"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:text="REFRESH"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:background="@drawable/button_red_modern"
+        android:stateListAnimator="@null" />
+
+</LinearLayout>
+

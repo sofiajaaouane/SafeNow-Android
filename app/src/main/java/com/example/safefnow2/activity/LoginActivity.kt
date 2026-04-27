@@ -37,17 +37,28 @@ class LoginActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val onlineFlow = ConnectivityObserver(this).isOnlineFlow()
         if (SessionManager.getCurrentUserId(this) != null) {
-            val next =
-                if (RequiredPermissions.allGranted(this)) HomeActivity::class.java
-                else PermissionsActivity::class.java
-            startActivity(Intent(this, next).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                if (next == PermissionsActivity::class.java) {
-                    putExtra(PermissionsActivity.EXTRA_REQUEST_ONLY, true)
+            scope.launch {
+                if (!onlineFlow.first()) {
+                    startActivity(Intent(this@LoginActivity, NoInternetActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    })
+                    finish()
+                    return@launch
                 }
-            })
-            finish()
+
+                val next =
+                    if (RequiredPermissions.allGranted(this@LoginActivity)) HomeActivity::class.java
+                    else PermissionsActivity::class.java
+                startActivity(Intent(this@LoginActivity, next).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    if (next == PermissionsActivity::class.java) {
+                        putExtra(PermissionsActivity.EXTRA_REQUEST_ONLY, true)
+                    }
+                })
+                finish()
+            }
             return
         }
         setContentView(R.layout.login)
@@ -84,13 +95,14 @@ class LoginActivity : ComponentActivity() {
                 return@setOnClickListener
             }
             scope.launch {
+                if (!onlineFlow.first()) {
+                    startActivity(Intent(this@LoginActivity, NoInternetActivity::class.java))
+                    return@launch
+                }
                 val user = withContext(Dispatchers.IO) {
                     val db = DatabaseProvider.get(this@LoginActivity)
                     val local = db.userDao().getByPhone(phone)
                     if (local != null) return@withContext local
-
-                    val online = ConnectivityObserver(this@LoginActivity).isOnlineFlow().first()
-                    if (!online) return@withContext null
 
                     val rtdb = RtdbClient()
                     val digits = phone.filter { it.isDigit() }
