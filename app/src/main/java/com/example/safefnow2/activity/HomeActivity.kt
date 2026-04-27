@@ -36,6 +36,7 @@ import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.DeviceIdProvider
 import com.example.safefnow2.util.GroupPopupHelper
 import com.example.safefnow2.util.OnlineWriteGuard
+import com.example.safefnow2.util.RequiredPermissions
 import com.example.safefnow2.util.SessionManager
 import com.example.safefnow2.service.AlwaysListenPrefs
 import com.example.safefnow2.service.AlwaysListenService
@@ -359,6 +360,14 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!RequiredPermissions.allGranted(this)) {
+            startActivity(Intent(this, PermissionsActivity::class.java).apply {
+                putExtra(PermissionsActivity.EXTRA_REQUEST_ONLY, true)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+            finish()
+            return
+        }
     }
 
     override fun onDestroy() {

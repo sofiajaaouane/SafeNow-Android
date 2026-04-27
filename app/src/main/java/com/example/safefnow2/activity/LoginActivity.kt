@@ -19,6 +19,7 @@ import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.DeviceIdProvider
 import com.example.safefnow2.util.PasswordHasher
+import com.example.safefnow2.util.RequiredPermissions
 import com.example.safefnow2.util.SessionManager
 import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.OnlineWriteGuard
@@ -37,8 +38,14 @@ class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (SessionManager.getCurrentUserId(this) != null) {
-            startActivity(Intent(this, HomeActivity::class.java).apply {
+            val next =
+                if (RequiredPermissions.allGranted(this)) HomeActivity::class.java
+                else PermissionsActivity::class.java
+            startActivity(Intent(this, next).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                if (next == PermissionsActivity::class.java) {
+                    putExtra(PermissionsActivity.EXTRA_REQUEST_ONLY, true)
+                }
             })
             finish()
             return
@@ -114,7 +121,17 @@ class LoginActivity : ComponentActivity() {
                     onlineRepo.ensureUserInRtdb(user)
                     onlineRepo.ensureDeviceId(user.idUser, DeviceIdProvider.getDeviceId(this@LoginActivity))
                 }
-                startActivity(Intent(this@LoginActivity, HomeActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK })
+                val next =
+                    if (RequiredPermissions.allGranted(this@LoginActivity)) HomeActivity::class.java
+                    else PermissionsActivity::class.java
+                startActivity(
+                    Intent(this@LoginActivity, next).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        if (next == PermissionsActivity::class.java) {
+                            putExtra(PermissionsActivity.EXTRA_REQUEST_ONLY, true)
+                        }
+                    }
+                )
                 finish()
             }
         }

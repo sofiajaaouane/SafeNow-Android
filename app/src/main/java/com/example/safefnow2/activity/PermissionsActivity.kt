@@ -21,6 +21,7 @@ import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.DeviceIdProvider
 import com.example.safefnow2.util.OnlineWriteGuard
+import com.example.safefnow2.util.RequiredPermissions
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -92,11 +93,15 @@ class PermissionsActivity : ComponentActivity() {
         updateCheckboxStates(checkGps, checkNotification, checkPhone)
 
         findViewById<Button>(R.id.btnContinuePermissions).setOnClickListener {
-            if (!allRequiredPermissionsGranted()) {
-                Toast.makeText(this, "Activez les 3 permissions pour creer votre compte", Toast.LENGTH_SHORT).show()
+            if (!RequiredPermissions.allGranted(this)) {
+                Toast.makeText(this, "Activez les 3 permissions", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            createAccountAndGoHome()
+            if (intent.getBooleanExtra(EXTRA_REQUEST_ONLY, false)) {
+                goHome()
+            } else {
+                createAccountAndGoHome()
+            }
         }
     }
 
@@ -129,8 +134,8 @@ class PermissionsActivity : ComponentActivity() {
     }
 
     private fun createAccountAndGoHome() {
-        if (!allRequiredPermissionsGranted()) {
-            Toast.makeText(this, "Activez les 3 permissions pour creer votre compte", Toast.LENGTH_SHORT).show()
+        if (!RequiredPermissions.allGranted(this)) {
+            Toast.makeText(this, "Activez les 3 permissions", Toast.LENGTH_SHORT).show()
             return
         }
         val phone = intent.getStringExtra(SignUpStep1Activity.EXTRA_PHONE) ?: ""
@@ -213,17 +218,25 @@ class PermissionsActivity : ComponentActivity() {
                 onlineRepo.ensureDeviceId(idUser, DeviceIdProvider.getDeviceId(this@PermissionsActivity))
             }
             SessionManager.setCurrentUserId(this@PermissionsActivity, idUser)
-            startActivity(
-                Intent(this@PermissionsActivity, HomeActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                }
-            )
-            finish()
+            goHome()
         }
+    }
+
+    private fun goHome() {
+        startActivity(
+            Intent(this@PermissionsActivity, HomeActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        )
+        finish()
     }
 
     override fun onDestroy() {
         scope.cancel()
         super.onDestroy()
+    }
+
+    companion object {
+        const val EXTRA_REQUEST_ONLY = "extra_request_only"
     }
 }
