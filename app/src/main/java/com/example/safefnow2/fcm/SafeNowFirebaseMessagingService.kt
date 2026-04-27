@@ -29,6 +29,7 @@ class SafeNowFirebaseMessagingService : FirebaseMessagingService() {
         AlertHelper.ensureChannel(this)
         val type = message.data["type"]?.trim().orEmpty()
         val senderName = message.data["senderName"]?.trim().orEmpty()
+        val sosId = message.data["sosId"]?.trim().orEmpty()
         val title = message.notification?.title
             ?: message.data["title"]
             ?: "SOS SafeNow"
@@ -42,7 +43,7 @@ class SafeNowFirebaseMessagingService : FirebaseMessagingService() {
                 ?: getString(com.example.safefnow2.R.string.sos_notification_default_body)
         }
         if (type == "SOS") {
-            AlertHelper.showSosFullScreen(this, title, body, senderName, message.hashCode())
+            AlertHelper.showSosFullScreen(this, title, body, senderName, sosId, message.hashCode())
         } else {
             AlertHelper.showAlertNotification(this, title, body, message.hashCode())
         }

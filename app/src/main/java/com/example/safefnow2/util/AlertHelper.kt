@@ -69,11 +69,12 @@ object AlertHelper {
         } catch (_: SecurityException) { }
     }
 
-    fun showSosFullScreen(context: Context, title: String, text: String, senderName: String, notificationId: Int = 999) {
+    fun showSosFullScreen(context: Context, title: String, text: String, senderName: String, sosId: String, notificationId: Int = 999) {
         ensureChannel(context)
         val intent = Intent(context, SosIncomingActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(SosIncomingActivity.EXTRA_SENDER_NAME, senderName)
+            putExtra(SosIncomingActivity.EXTRA_SOS_ID, sosId)
         }
         val pending = PendingIntent.getActivity(
             context,
@@ -98,10 +99,11 @@ object AlertHelper {
         } catch (_: SecurityException) { }
     }
 
-    fun startSosIncomingActivity(context: Context, senderName: String) {
+    fun startSosIncomingActivity(context: Context, senderName: String, sosId: String) {
         val intent = Intent(context, SosIncomingActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(SosIncomingActivity.EXTRA_SENDER_NAME, senderName)
+            putExtra(SosIncomingActivity.EXTRA_SOS_ID, sosId)
         }
         runCatching { context.startActivity(intent) }
     }

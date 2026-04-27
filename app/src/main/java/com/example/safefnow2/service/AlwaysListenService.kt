@@ -59,7 +59,7 @@ class AlwaysListenService : Service() {
                     rtdb.get(RtdbPaths.userSosSenderName(userId)).getValue(String::class.java)
                 }.getOrNull()?.trim().orEmpty()
 
-                AlertHelper.startSosIncomingActivity(this, sender)
+                AlertHelper.startSosIncomingActivity(this, sender, sosId)
             }
             .launchIn(scope)
     }
@@ -98,4 +98,3 @@ class AlwaysListenService : Service() {
         }
     }
 }
-

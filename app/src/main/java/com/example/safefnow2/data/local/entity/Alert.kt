@@ -12,5 +12,17 @@ data class Alert(
     @ColumnInfo(name = "created_at", defaultValue = "CURRENT_TIMESTAMP")
     val createdAt: String? = null,
     @ColumnInfo(name = "type_alert")
-    val typeAlert: String
+    val typeAlert: String,
+    @ColumnInfo(name = "target_type")
+    val targetType: String? = null, // "GLOBAL", "GROUP", or "RECEIVED"
+    @ColumnInfo(name = "target_name")
+    val targetName: String? = null,
+    @ColumnInfo(name = "target_id")
+    val targetId: String? = null,   // ID du groupe ou de l'utilisateur cible
+    @ColumnInfo(name = "stopped_by_id")
+    val stoppedById: String? = null,
+    @ColumnInfo(name = "stopped_at")
+    val stoppedAt: String? = null,
+    @ColumnInfo(name = "stopped_location")
+    val stoppedLocation: String? = null
 )

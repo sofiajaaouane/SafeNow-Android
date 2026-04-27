@@ -1,25 +1,41 @@
 package com.example.safefnow2.activity
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.location.Location
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.core.app.ActivityCompat
 import com.example.safefnow2.R
+import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbPaths
 import com.example.safefnow2.util.SessionManager
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class SosIncomingActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_SENDER_NAME = "extra_sender_name"
+        const val EXTRA_SOS_ID = "extra_sos_id"
     }
 
     private var ringtone: Ringtone? = null
@@ -39,16 +55,73 @@ class SosIncomingActivity : ComponentActivity() {
         setContentView(R.layout.activity_sos_incoming)
 
         val sender = intent.getStringExtra(EXTRA_SENDER_NAME).orEmpty()
+        val sosId = intent.getStringExtra(EXTRA_SOS_ID).orEmpty()
+        
         findViewById<TextView>(R.id.tvSosIncomingSender).text =
             if (sender.isNotEmpty()) sender else "SafeNow"
 
         findViewById<TextView>(R.id.btnSosIncomingStop).setOnClickListener {
-            stopAlarm()
-            clearSosId()
-            finish()
+            handleStopSos(sosId)
         }
 
         startAlarm()
+    }
+
+    private fun handleStopSos(sosId: String) {
+        stopAlarm()
+        val userId = SessionManager.getCurrentUserId(this)?.trim().orEmpty()
+        
+        scope.launch {
+            // 1. Récupérer la localisation de celui qui arrête
+            val location = getCurrentLocation()
+            val address = if (location != null) getReadableAddress(location) else "Position inconnue"
+            val stopTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+
+            // 2. Mettre à jour la base de données locale
+            withContext(Dispatchers.IO) {
+                val db = DatabaseProvider.get(this@SosIncomingActivity)
+                val alert = db.alertDao().getById(sosId)
+                if (alert != null) {
+                    val updated = alert.copy(
+                        stoppedById = userId,
+                        stoppedAt = stopTime,
+                        stoppedLocation = address
+                    )
+                    db.alertDao().update(updated)
+                }
+            }
+
+            // 3. Effacer sur Firebase
+            clearSosId(userId)
+            
+            finish()
+        }
+    }
+
+    private suspend fun getCurrentLocation(): Location? {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return null
+        }
+        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        return try {
+            fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, CancellationTokenSource().token).await()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private suspend fun getReadableAddress(location: Location): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(this@SosIncomingActivity, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    addresses[0].getAddressLine(0) ?: "Adresse introuvable"
+                } else "Lat: ${location.latitude}, Lon: ${location.longitude}"
+            } catch (e: Exception) {
+                "Lat: ${location.latitude}, Lon: ${location.longitude}"
+            }
+        }
     }
 
     private fun startAlarm() {
@@ -65,8 +138,7 @@ class SosIncomingActivity : ComponentActivity() {
         ringtone = null
     }
 
-    private fun clearSosId() {
-        val userId = SessionManager.getCurrentUserId(this)?.trim().orEmpty()
+    private fun clearSosId(userId: String) {
         if (userId.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             val updates = mapOf(
@@ -84,4 +156,3 @@ class SosIncomingActivity : ComponentActivity() {
         super.onDestroy()
     }
 }
-

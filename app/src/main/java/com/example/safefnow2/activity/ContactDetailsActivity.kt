@@ -1,6 +1,8 @@
 package com.example.safefnow2.activity
 
+import android.Manifest
 import android.app.AlertDialog
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -11,6 +13,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.safefnow2.R
 import com.example.safefnow2.data.SosDevicePrefs
@@ -20,9 +23,14 @@ import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.data.remote.SosRepository
 import com.example.safefnow2.ui.sos.SosUiEvent
 import com.example.safefnow2.ui.sos.SosViewModel
+import com.example.safefnow2.util.AlertHistoryHelper
 import com.example.safefnow2.util.SessionManager
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class ContactDetailsActivity : ComponentActivity() {
@@ -98,6 +106,31 @@ class ContactDetailsActivity : ComponentActivity() {
                 val senderName = self?.let { "${it.prenom} ${it.nom}".trim() }.orEmpty()
                     .ifEmpty { "SafeNow" }
                 val contactLabel = "${user.prenom} ${user.nom}".trim()
+                
+                // 1. Récupérer la localisation réelle
+                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this@ContactDetailsActivity)
+                val location = if (ActivityCompat.checkSelfPermission(this@ContactDetailsActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    try {
+                        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, CancellationTokenSource().token).await()
+                    } catch (e: Exception) { null }
+                } else null
+
+                val address = if (location != null) {
+                    AlertHistoryHelper.getReadableAddress(this@ContactDetailsActivity, location)
+                } else "Position inconnue"
+
+                // 2. Enregistrer dans l'historique local
+                AlertHistoryHelper.saveAlertToLocalHistory(
+                    context = this@ContactDetailsActivity,
+                    userId = selfId,
+                    typeStr = "SOS CONTACT",
+                    targetType = "CONTACT",
+                    targetName = contactLabel,
+                    targetId = user.idUser,
+                    location = address
+                )
+
+                // 3. Envoyer le SOS via le serveur
                 sosViewModel.sendSosToContactPhone(user.numTel, senderName, contactLabel)
             }
         }

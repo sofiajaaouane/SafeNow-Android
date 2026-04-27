@@ -1,6 +1,10 @@
 package com.example.safefnow2.activity
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.location.Location
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,10 +14,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.safefnow2.R
 import com.example.safefnow2.ProfileActivity
 import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.data.local.entity.Alert
+import com.example.safefnow2.data.local.entity.DeclarationAlert
+import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbObserve
 import com.example.safefnow2.data.repository.GroupsOnlineFirstRepository
@@ -31,6 +39,10 @@ import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
 import com.example.safefnow2.service.AlwaysListenPrefs
 import com.example.safefnow2.service.AlwaysListenService
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -38,7 +50,12 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 
 class HomeActivity : AppCompatActivity() {
 
@@ -47,16 +64,21 @@ class HomeActivity : AppCompatActivity() {
     private val userRepo by lazy { UserOnlineFirstRepository(this) }
     private val groupsRepo by lazy { GroupsOnlineFirstRepository(this) }
     private var cachedSenderName: String = "SafeNow"
+    
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
+        
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        
         AlertHelper.ensureChannel(this)
         if (AlwaysListenPrefs(this).isEnabled()) {
             AlwaysListenService.start(this)
         }
         startSosIdListenerWhileOpen()
-        // Keep as safety refresh, but UI is RTDB-first when online.
+        
         SyncScheduler.enqueueOneTime(this)
         ConnectivityObserver(this).isOnlineFlow()
             .onEach { online ->
@@ -93,28 +115,40 @@ class HomeActivity : AppCompatActivity() {
         findViewById<FrameLayout>(R.id.btnHomeSos).setOnClickListener {
             val userId = SessionManager.getCurrentUserId(this@HomeActivity).orEmpty()
             if (userId.isEmpty()) return@setOnClickListener
-            lifecycleScope.launch(Dispatchers.IO) {
-                val result = runCatching {
-                    OnlineRepository(
-                        DatabaseProvider.get(this@HomeActivity),
-                        OnlineWriteGuard(ConnectivityObserver(this@HomeActivity).isOnlineFlow()),
-                        RtdbClient()
-                    ).sendGlobalSosToActiveGroups(userId, cachedSenderName)
+            
+            lifecycleScope.launch {
+                // On tente de récupérer la position avec plus d'insistance
+                val location = getCurrentLocation()
+                val locationStr = if (location != null) {
+                    getReadableAddress(location)
+                } else {
+                    "Position indisponible (Vérifiez votre GPS)"
                 }
-                withContext(Dispatchers.Main) {
-                    if (result.isFailure) {
-                        val ex = result.exceptionOrNull()
-                        if (ex is com.example.safefnow2.data.repository.OfflineWriteNotAllowed) {
-                            Toast.makeText(this@HomeActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+
+                withContext(Dispatchers.IO) {
+                    val result = runCatching {
+                        OnlineRepository(
+                            DatabaseProvider.get(this@HomeActivity),
+                            OnlineWriteGuard(ConnectivityObserver(this@HomeActivity).isOnlineFlow()),
+                            RtdbClient()
+                        ).sendGlobalSosToActiveGroups(userId, cachedSenderName)
+                    }
+                    withContext(Dispatchers.Main) {
+                        if (result.isFailure) {
+                            val ex = result.exceptionOrNull()
+                            if (ex is com.example.safefnow2.data.repository.OfflineWriteNotAllowed) {
+                                Toast.makeText(this@HomeActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(this@HomeActivity, (ex?.message ?: "Erreur SOS"), Toast.LENGTH_SHORT).show()
+                            }
                         } else {
-                            Toast.makeText(this@HomeActivity, (ex?.message ?: "Erreur SOS"), Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        val count = result.getOrNull() ?: 0
-                        if (count <= 0) {
-                            Toast.makeText(this@HomeActivity, "Aucun groupe SOS activé", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(this@HomeActivity, getString(R.string.toast_sos_sent), Toast.LENGTH_SHORT).show()
+                            val count = result.getOrNull() ?: 0
+                            if (count <= 0) {
+                                Toast.makeText(this@HomeActivity, "Aucun groupe SOS activé", Toast.LENGTH_SHORT).show()
+                            } else {
+                                saveAlertToLocalHistory(userId, "SOS GLOBAL", "GLOBAL", null, null, locationStr)
+                                Toast.makeText(this@HomeActivity, getString(R.string.toast_sos_sent), Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 }
@@ -139,6 +173,9 @@ class HomeActivity : AppCompatActivity() {
         }
         findViewById<LinearLayout>(R.id.navGroupes)?.setOnClickListener {
             startActivity(Intent(this, MyGroupsActivity::class.java))
+        }
+        findViewById<LinearLayout>(R.id.navHistory)?.setOnClickListener {
+            startActivity(Intent(this, HistoryActivity::class.java))
         }
         findViewById<FrameLayout>(R.id.btnAddGroup)?.setOnClickListener {
             startActivity(Intent(this, CreateGroupActivity::class.java))
@@ -179,6 +216,63 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+    private suspend fun getCurrentLocation(): Location? {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return null
+        }
+        return try {
+            // Tente d'abord d'obtenir la position actuelle précise
+            val current = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, CancellationTokenSource().token).await()
+            // Si échoue, prend la dernière position connue (plus rapide)
+            current ?: fusedLocationClient.lastLocation.await()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private suspend fun getReadableAddress(location: Location): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(this@HomeActivity, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    addresses[0].getAddressLine(0) ?: "Adresse introuvable"
+                } else {
+                    "Lat: ${"%.4f".format(location.latitude)}, Lon: ${"%.4f".format(location.longitude)}"
+                }
+            } catch (e: Exception) {
+                "Lat: ${"%.4f".format(location.latitude)}, Lon: ${"%.4f".format(location.longitude)}"
+            }
+        }
+    }
+
+    private fun saveAlertToLocalHistory(userId: String, typeStr: String, targetType: String, targetName: String?, targetId: String?, location: String? = null) {
+        scope.launch(Dispatchers.IO) {
+            val db = DatabaseProvider.get(this@HomeActivity)
+            val alertId = UUID.randomUUID().toString()
+            val now = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            
+            val alert = Alert(
+                idAlert = alertId,
+                createdAt = now,
+                typeAlert = typeStr,
+                targetType = targetType,
+                targetName = targetName,
+                targetId = targetId
+            )
+            db.alertDao().insert(alert)
+            
+            val decl = DeclarationAlert(
+                idUser = userId,
+                idAlert = alertId,
+                createdAt = now,
+                localisation = location,
+                status = "SENT"
+            )
+            db.declarationAlertDao().insert(decl)
+        }
+    }
+
     private fun startSosIdListenerWhileOpen() {
         val userId = SessionManager.getCurrentUserId(this)?.trim().orEmpty()
         if (userId.isEmpty()) return
@@ -197,9 +291,41 @@ class HomeActivity : AppCompatActivity() {
                     rtdb.get(RtdbPaths.userSosSenderName(userId)).getValue(String::class.java)
                 }.getOrNull()?.trim().orEmpty()
 
-                AlertHelper.startSosIncomingActivity(this, sender)
+                saveReceivedAlertToHistory(sender, sosId)
+
+                AlertHelper.startSosIncomingActivity(this, sender, sosId)
             }
             .launchIn(lifecycleScope)
+    }
+
+    private fun saveReceivedAlertToHistory(senderName: String, sosId: String) {
+        scope.launch(Dispatchers.IO) {
+            val db = DatabaseProvider.get(this@HomeActivity)
+            val now = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            
+            val tempUserId = "received_$senderName"
+            if (db.userDao().getById(tempUserId) == null) {
+                db.userDao().insert(User(tempUserId, senderName, "", "", ""))
+            }
+
+            val alert = Alert(
+                idAlert = sosId,
+                createdAt = now,
+                typeAlert = "SOS REÇU",
+                targetType = "RECEIVED",
+                targetName = senderName
+            )
+            db.alertDao().insert(alert)
+            
+            val decl = DeclarationAlert(
+                idUser = tempUserId,
+                idAlert = sosId,
+                createdAt = now,
+                localisation = "Position de l'expéditeur",
+                status = "RECEIVED"
+            )
+            db.declarationAlertDao().insert(decl)
+        }
     }
 
     private fun renderGroupsStories(container: LinearLayout?, groups: List<com.example.safefnow2.data.local.entity.EmergencyGroup>, userId: String) {
@@ -233,7 +359,6 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Live collectors handle updates.
     }
 
     override fun onDestroy() {

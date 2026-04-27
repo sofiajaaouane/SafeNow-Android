@@ -9,10 +9,10 @@
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
     <application
+        android:name=".SafeNowApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -69,6 +69,12 @@
         <activity
             android:name=".activity.MyGroupsActivity"
             android:exported="false" />
+        <activity
+            android:name=".activity.HistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activity.AlertDetailActivity"
+            android:exported="false" />
 
         <activity
             android:name=".activity.NotificationsActivity"
@@ -90,11 +96,6 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-
-        <service
-            android:name=".service.AlwaysListenService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
 
     </application>
 

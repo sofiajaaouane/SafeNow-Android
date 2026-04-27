@@ -1,16 +1,23 @@
 package com.example.safefnow2.util
 
+import android.Manifest
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.location.Location
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.data.local.entity.Alert
+import com.example.safefnow2.data.local.entity.DeclarationAlert
 import com.example.safefnow2.data.local.entity.EmergencyGroup
 import com.example.safefnow2.data.local.entity.GroupMember
 import com.example.safefnow2.data.remote.RtdbClient
@@ -20,10 +27,18 @@ import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
 import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.OnlineWriteGuard
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 
 object GroupPopupHelper {
 
@@ -46,16 +61,13 @@ object GroupPopupHelper {
             .create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        // Fill name and avatar
         popupView.findViewById<TextView>(R.id.tvPopupGroupName).text = group.name
         popupView.findViewById<TextView>(R.id.tvPopupGroupAvatar)?.text =
             group.name.take(2).uppercase()
 
-        // Load members
         val membersContainer = popupView.findViewById<LinearLayout>(R.id.llPopupMembers)
         loadMembers(activity, scope, group.idGroup, userId, membersContainer)
 
-        // Toggle switch
         val switchActivate = popupView.findViewById<Switch>(R.id.switchActivateGroup)
         switchActivate.isChecked = group.sosGlobal == 1
         switchActivate.setOnCheckedChangeListener { _, isChecked ->
@@ -75,12 +87,10 @@ object GroupPopupHelper {
             }
         }
 
-        // Add member button
         popupView.findViewById<TextView>(R.id.btnAddMember).setOnClickListener {
             showAddMemberDialog(activity, scope, group.idGroup, userId, membersContainer)
         }
 
-        // SOS group button (admin only)
         val btnSos = popupView.findViewById<android.view.View>(R.id.btnSOS)
         if (group.idAdmin != userId) {
             btnSos.visibility = android.view.View.GONE
@@ -91,6 +101,18 @@ object GroupPopupHelper {
                 return@setOnClickListener
             }
             scope.launch {
+                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(activity)
+                val location = if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    try {
+                        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, CancellationTokenSource().token).await()
+                    } catch (e: Exception) { null }
+                } else null
+
+                // On transforme les coordonnées en adresse réelle
+                val locationStr = if (location != null) {
+                    getReadableAddress(activity, location)
+                } else "Position inconnue"
+
                 val senderName = withContext(Dispatchers.IO) {
                     val me = DatabaseProvider.get(activity).userDao().getById(userId)
                     me?.let { "${it.prenom} ${it.nom}".trim() }?.ifEmpty { "SafeNow" } ?: "SafeNow"
@@ -103,12 +125,12 @@ object GroupPopupHelper {
                 } else if (result.isFailure && result.exceptionOrNull()?.message == "not_admin") {
                     Toast.makeText(activity, "Seul l'admin peut lancer SOS", Toast.LENGTH_SHORT).show()
                 } else {
+                    saveAlertToLocalHistory(activity, scope, userId, "SOS GROUPE", "GROUP", group.name, locationStr)
                     Toast.makeText(activity, "SOS envoyé au groupe", Toast.LENGTH_SHORT).show()
                 }
             }
         }
 
-        // Delete group button
         popupView.findViewById<TextView>(R.id.btnDeleteGroup).setOnClickListener {
             AlertDialog.Builder(activity)
                 .setTitle("Supprimer le groupe")
@@ -134,9 +156,48 @@ object GroupPopupHelper {
         dialog.show()
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // LOAD MEMBERS — long-press to delete
-    // ─────────────────────────────────────────────────────────────────────────
+    private suspend fun getReadableAddress(context: Context, location: Location): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    addresses[0].getAddressLine(0) ?: "Adresse introuvable"
+                } else {
+                    "Lat: ${"%.4f".format(location.latitude)}, Lon: ${"%.4f".format(location.longitude)}"
+                }
+            } catch (e: Exception) {
+                "Lat: ${"%.4f".format(location.latitude)}, Lon: ${"%.4f".format(location.longitude)}"
+            }
+        }
+    }
+
+    private fun saveAlertToLocalHistory(context: Context, scope: CoroutineScope, userId: String, typeStr: String, targetType: String, targetName: String?, location: String?) {
+        scope.launch(Dispatchers.IO) {
+            val db = DatabaseProvider.get(context)
+            val alertId = UUID.randomUUID().toString()
+            val now = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            
+            val alert = Alert(
+                idAlert = alertId,
+                createdAt = now,
+                typeAlert = typeStr,
+                targetType = targetType,
+                targetName = targetName
+            )
+            db.alertDao().insert(alert)
+            
+            val decl = DeclarationAlert(
+                idUser = userId,
+                idAlert = alertId,
+                createdAt = now,
+                localisation = location,
+                status = "SENT"
+            )
+            db.declarationAlertDao().insert(decl)
+        }
+    }
+
     private fun loadMembers(
         activity: AppCompatActivity,
         scope: CoroutineScope,
@@ -150,7 +211,6 @@ object GroupPopupHelper {
             val members = withContext(Dispatchers.IO) {
                 DatabaseProvider.get(activity).groupMemberDao().getByGroupId(groupId)
             }
-
 
             if (container.childCount > 1) {
                 container.removeViews(1, container.childCount - 1)
@@ -176,7 +236,6 @@ object GroupPopupHelper {
                 tvMember.gravity = Gravity.CENTER
                 tvMember.setBackgroundResource(R.drawable.step_circle_active)
 
-                // Long-press → delete member
                 val memberName = if (user != null) "${user.prenom} ${user.nom}" else "ce membre"
                 tvMember.setOnLongClickListener {
                     AlertDialog.Builder(activity)
