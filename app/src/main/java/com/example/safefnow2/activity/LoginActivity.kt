@@ -9,6 +9,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.remote.RtdbClient
@@ -21,6 +22,7 @@ import com.example.safefnow2.util.DeviceIdProvider
 import com.example.safefnow2.util.PasswordHasher
 import com.example.safefnow2.util.RequiredPermissions
 import com.example.safefnow2.util.SessionManager
+import com.example.safefnow2.ui.session.SessionViewModel
 import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.OnlineWriteGuard
 import kotlinx.coroutines.CoroutineScope
@@ -34,10 +36,11 @@ import kotlinx.coroutines.withContext
 class LoginActivity : ComponentActivity() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val sessionVm: SessionViewModel by viewModels()
+    private val onlineFlow by lazy { ConnectivityObserver(this).isOnlineFlow() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val onlineFlow = ConnectivityObserver(this).isOnlineFlow()
         if (SessionManager.getCurrentUserId(this) != null) {
             scope.launch {
                 if (!onlineFlow.first()) {
@@ -45,6 +48,12 @@ class LoginActivity : ComponentActivity() {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     })
                     finish()
+                    return@launch
+                }
+
+                if (sessionVm.isSessionDeletedOnline()) {
+                    SessionManager.clear(this@LoginActivity)
+                    setupLoginUi()
                     return@launch
                 }
 
@@ -61,6 +70,10 @@ class LoginActivity : ComponentActivity() {
             }
             return
         }
+        setupLoginUi()
+    }
+
+    private fun setupLoginUi() {
         setContentView(R.layout.login)
         AlertHelper.ensureChannel(this)
 

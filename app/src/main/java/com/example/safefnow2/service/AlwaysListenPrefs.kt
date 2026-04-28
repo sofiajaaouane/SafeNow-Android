@@ -5,7 +5,7 @@ import android.content.Context
 class AlwaysListenPrefs(context: Context) {
     private val prefs = context.getSharedPreferences("safenow_always_listen", Context.MODE_PRIVATE)
 
-    fun isEnabled(): Boolean = prefs.getBoolean(KEY_ENABLED, false)
+    fun isEnabled(): Boolean = prefs.getBoolean(KEY_ENABLED, true)
 
     fun setEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_ENABLED, enabled).apply()

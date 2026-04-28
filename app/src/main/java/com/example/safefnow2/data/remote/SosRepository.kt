@@ -23,10 +23,10 @@ class SosRepository(context: Context) {
         phone.filter { it.isDigit() }
 
     suspend fun syncMyDeviceToCloud(displayName: String, phone: String, appUserId: String) {
-        val token = FirebaseMessaging.getInstance().token.await()
         val deviceId = prefs.getOrCreateDeviceId()
         val digits = normalizePhoneDigits(phone)
         prefs.rememberSyncedPhone(phone)
+        val token = FirebaseMessaging.getInstance().token.await()
         val data = hashMapOf(
             "fcmToken" to token,
             "displayName" to displayName,
@@ -168,6 +168,9 @@ class SosRepository(context: Context) {
             val sDoc = firestore.collection("devices").document(senderDeviceId).get().await()
             senderDigits = sDoc.getString("phoneDigits")
                 ?: normalizePhoneDigits(sDoc.getString("phone") ?: "")
+            if (senderDigits.isNotEmpty()) {
+                prefs.rememberSyncedPhone(senderDigits)
+            }
         }
         var targetDigits = targetPhoneDigitsHint?.filter { it.isDigit() } ?: ""
         var targetName = targetDisplayNameHint
@@ -209,7 +212,16 @@ class SosRepository(context: Context) {
     }
 
     suspend fun loadSosHistoryForMyPhone(): List<SosHistoryEntry> {
-        val digits = prefs.getMyPhoneDigits()
+        var digits = prefs.getMyPhoneDigits()
+        if (digits.isEmpty()) {
+            val deviceId = prefs.getOrCreateDeviceId()
+            val doc = firestore.collection("devices").document(deviceId).get().await()
+            digits = doc.getString("phoneDigits")
+                ?: normalizePhoneDigits(doc.getString("phone") ?: "")
+            if (digits.isNotEmpty()) {
+                prefs.rememberSyncedPhone(digits)
+            }
+        }
         if (digits.isEmpty()) return emptyList()
         val snap = firestore.collection("sos_history")
             .whereEqualTo("ownerPhoneDigits", digits)

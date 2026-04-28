@@ -37,11 +37,45 @@
         android:layout_height="1dp"
         android:background="#F0F0F0" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvHistory"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="16dp"
-        android:clipToPadding="false" />
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvHistory"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="16dp"
+            android:clipToPadding="false" />
+
+        <ProgressBar
+            android:id="@+id/pbHistoryLoading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvHistoryEmpty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Aucun SOS dans l'historique"
+            android:textColor="#999999"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvHistoryError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Erreur de chargement"
+            android:textColor="#CC0000"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
 </LinearLayout>

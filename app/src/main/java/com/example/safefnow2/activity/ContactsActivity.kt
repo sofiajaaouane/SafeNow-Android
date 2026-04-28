@@ -16,6 +16,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,10 +27,10 @@ import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbPaths
 import com.example.safefnow2.data.remote.toUser
-import com.example.safefnow2.data.repository.ContactsOnlineFirstRepository
 import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
 import com.example.safefnow2.data.repository.OnlineRepository
+import com.example.safefnow2.ui.contacts.ContactsViewModel
 import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
@@ -54,13 +55,12 @@ data class ContactUiItem(
 
 class ContactsActivity : ComponentActivity() {
 
-    private val searchQuery = MutableStateFlow("")
+    private val vm: ContactsViewModel by viewModels()
     private lateinit var adapter: ContactsAdapter
     private val onlineRepo by lazy {
         val isOnline = ConnectivityObserver(this).isOnlineFlow()
         OnlineRepository(DatabaseProvider.get(this), OnlineWriteGuard(isOnline), RtdbClient())
     }
-    private val contactsRepo by lazy { ContactsOnlineFirstRepository(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,7 +88,7 @@ class ContactsActivity : ComponentActivity() {
                             before: Int,
                             count: Int
                     ) {
-                        searchQuery.value = s?.toString()?.trim() ?: ""
+                        vm.setQuery(s?.toString() ?: "")
                     }
                     override fun afterTextChanged(s: Editable?) {}
                 }
@@ -103,12 +103,14 @@ class ContactsActivity : ComponentActivity() {
         list.adapter = adapter
 
         val currentUserId = SessionManager.getCurrentUserId(this) ?: return
-        contactsRepo.acceptedContacts(currentUserId, searchQuery)
-            .onEach { filtered ->
-                adapter.submitList(filtered.sortedBy { it.fullName })
-                empty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
-            }
-            .launchIn(lifecycleScope)
+        vm.contacts(currentUserId).observe(this) { filtered ->
+            adapter.submitList(filtered.sortedBy { it.fullName })
+            empty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+        }
+        vm.toast.observe(this) { ev ->
+            val msg = ev.getIfNotHandled() ?: return@observe
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        }
 
         fabAdd.setOnClickListener { showAddContactDialog() }
     }
@@ -131,22 +133,13 @@ class ContactsActivity : ComponentActivity() {
     }
 
     private fun deleteAmitier(item: ContactUiItem) {
-        lifecycleScope.launch {
-            val currentUserId = SessionManager.getCurrentUserId(this@ContactsActivity).orEmpty()
-            val edge = Amitier(
-                idUser1 = item.amitierIdUser1,
-                idUser2 = item.amitierIdUser2,
-                status = "PENDING"
-            )
-            val result = withContext(Dispatchers.IO) {
-                runCatching { onlineRepo.deleteFriendEdge(edge, currentUserId) }
-            }
-            if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                Toast.makeText(this@ContactsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this@ContactsActivity, "Contact supprimé", Toast.LENGTH_SHORT).show()
-            }
-        }
+        val currentUserId = SessionManager.getCurrentUserId(this@ContactsActivity).orEmpty()
+        val edge = Amitier(
+            idUser1 = item.amitierIdUser1,
+            idUser2 = item.amitierIdUser2,
+            status = "PENDING"
+        )
+        vm.deleteContact(edge, currentUserId)
     }
 
     private fun showAddContactDialog() {
@@ -204,38 +197,13 @@ class ContactsActivity : ComponentActivity() {
             val code = countries[spinner.selectedItemPosition].second
             val fullPhone = code + localNumber
 
-            lifecycleScope.launch {
-                val db = DatabaseProvider.get(this@ContactsActivity)
-                val user = withContext(Dispatchers.IO) {
-                    val local = db.userDao().getByPhone(fullPhone)
-                    if (local != null) return@withContext local
-
-                    val online = ConnectivityObserver(this@ContactsActivity).isOnlineFlow().first()
-                    if (!online) return@withContext null
-
-                    val rtdb = RtdbClient()
-                    val digits = fullPhone.filter { it.isDigit() }
-                    val userId =
-                        rtdb.get(RtdbPaths.userByPhone(fullPhone)).getValue(String::class.java)
-                            ?: (if (digits.isNotEmpty()) rtdb.get(RtdbPaths.userByPhone(digits)).getValue(String::class.java) else null)
-                            ?: return@withContext null
-                    val userSnap = rtdb.get(RtdbPaths.user(userId))
-                    val remoteUser = userSnap.toUser()
-                    if (remoteUser != null) {
-                        db.userDao().insert(remoteUser)
-                        runCatching { SyncRepository(db, rtdb).syncNow(SessionManager.getCurrentUserId(this@ContactsActivity).orEmpty()) }
-                    }
-                    remoteUser
-                }
-
+            vm.searchUserByPhone(fullPhone) { user ->
                 foundUser = user
-
                 if (user == null) {
                     resultContainer.visibility = View.GONE
                     tvNoUser.visibility = View.VISIBLE
-                    return@launch
+                    return@searchUserByPhone
                 }
-
                 tvNoUser.visibility = View.GONE
                 tvResultFullName.text = "${user.prenom} ${user.nom}"
                 tvResultPhone.text = user.numTel
@@ -264,46 +232,8 @@ class ContactsActivity : ComponentActivity() {
                             }
 
             lifecycleScope.launch {
-                val db = DatabaseProvider.get(this@ContactsActivity)
-                val existing =
-                        withContext(Dispatchers.IO) {
-                            db.amitierDao().getById(currentUserId, user.idUser)
-                        }
-
-                if (existing != null) {
-                    Toast.makeText(
-                                    this@ContactsActivity,
-                                    "Demande déjà envoyée",
-                                    Toast.LENGTH_SHORT
-                            )
-                            .show()
-                    return@launch
-                }
-
-                val result = withContext(Dispatchers.IO) {
-                    runCatching {
-                        onlineRepo.sendFriendRequest(
-                            Amitier(
-                                idUser1 = currentUserId,
-                                idUser2 = user.idUser,
-                                status = "PENDING"
-                            ),
-                            currentUserId = currentUserId
-                        )
-                    }
-                }
-
-                if (result.isFailure) {
-                    val ex = result.exceptionOrNull()
-                    if (ex is OfflineWriteNotAllowed) {
-                        Toast.makeText(this@ContactsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this@ContactsActivity, "Erreur envoi invitation", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(this@ContactsActivity, "Demande envoyée", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
-                }
+                vm.sendFriendRequest(currentUserId, user.idUser)
+                dialog.dismiss()
             }
         }
 

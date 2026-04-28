@@ -25,6 +25,7 @@ import com.example.safefnow2.data.remote.RtdbPaths
 import com.example.safefnow2.data.remote.toUser
 import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
 import com.example.safefnow2.data.repository.OnlineRepository
+import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.OnlineWriteGuard
 import com.google.android.gms.location.LocationServices
@@ -65,8 +66,8 @@ object GroupPopupHelper {
         popupView.findViewById<TextView>(R.id.tvPopupGroupAvatar)?.text =
             group.name.take(2).uppercase()
 
-        val membersContainer = popupView.findViewById<LinearLayout>(R.id.llPopupMembers)
-        loadMembers(activity, scope, group.idGroup, userId, membersContainer)
+        val avatarsContainer = popupView.findViewById<LinearLayout>(R.id.llPopupMembersAvatars)
+        loadMembers(activity, scope, group.idGroup, userId, avatarsContainer)
 
         val switchActivate = popupView.findViewById<Switch>(R.id.switchActivateGroup)
         switchActivate.isChecked = group.sosGlobal == 1
@@ -88,7 +89,7 @@ object GroupPopupHelper {
         }
 
         popupView.findViewById<TextView>(R.id.btnAddMember).setOnClickListener {
-            showAddMemberDialog(activity, scope, group.idGroup, userId, membersContainer)
+            showAddMemberDialog(activity, scope, group.idGroup, userId, avatarsContainer)
         }
 
         val btnSos = popupView.findViewById<android.view.View>(R.id.btnSOS)
@@ -186,40 +187,51 @@ object GroupPopupHelper {
         scope: CoroutineScope,
         groupId: String,
         currentUserId: String,
-        container: LinearLayout?
+        avatarsContainer: LinearLayout?
     ) {
-        if (container == null) return
+        if (avatarsContainer == null) return
 
         scope.launch {
-            val members = withContext(Dispatchers.IO) {
-                DatabaseProvider.get(activity).groupMemberDao().getByGroupId(groupId)
-            }
-
-            if (container.childCount > 1) {
-                container.removeViews(1, container.childCount - 1)
-            }
-
-            members.forEachIndexed { index, member ->
-                val user = withContext(Dispatchers.IO) {
-                    DatabaseProvider.get(activity).userDao().getById(member.idUser)
+            val items = withContext(Dispatchers.IO) {
+                val db = DatabaseProvider.get(activity)
+                var members = db.groupMemberDao().getByGroupId(groupId)
+                if (members.isEmpty()) {
+                    runCatching { SyncRepository(db, RtdbClient()).syncNow(currentUserId) }
+                    members = db.groupMemberDao().getByGroupId(groupId)
                 }
+                val seenIds = linkedSetOf<String>()
+                members.mapNotNullIndexed { idx, member ->
+                    val memberId = member.idUser.trim()
+                    if (memberId.isEmpty()) return@mapNotNullIndexed null
+                    if (!seenIds.add(memberId)) return@mapNotNullIndexed null
+                    val user = db.userDao().getById(memberId)
+                    MemberItem(
+                        memberId = memberId,
+                        displayName = user?.let { "${it.prenom} ${it.nom}".trim() }?.ifEmpty { null },
+                        initials = initialsFrom(user?.prenom, user?.nom, fallbackIndex = idx),
+                    )
+                }
+            }
 
-                val dp     = activity.resources.displayMetrics.density
-                val size   = (44 * dp).toInt()
+            avatarsContainer.removeAllViews()
+
+            val dp = activity.resources.displayMetrics.density
+            val size = (44 * dp).toInt()
+            val marginEnd = (8 * dp).toInt()
+
+            items.forEach { item ->
                 val params = LinearLayout.LayoutParams(size, size)
-                params.marginEnd = (8 * dp).toInt()
+                params.marginEnd = marginEnd
 
                 val tvMember = TextView(activity)
                 tvMember.layoutParams = params
-                tvMember.text = if (user != null) {
-                    "${user.prenom.firstOrNull()?.uppercaseChar() ?: ""}${user.nom.firstOrNull()?.uppercaseChar() ?: ""}"
-                } else "M${index + 1}"
+                tvMember.text = item.initials
                 tvMember.textSize = 13f
                 tvMember.setTextColor(0xFFFFFFFF.toInt())
                 tvMember.gravity = Gravity.CENTER
                 tvMember.setBackgroundResource(R.drawable.step_circle_active)
 
-                val memberName = if (user != null) "${user.prenom} ${user.nom}" else "ce membre"
+                val memberName = item.displayName ?: "ce membre"
                 tvMember.setOnLongClickListener {
                     AlertDialog.Builder(activity)
                         .setTitle("Retirer le membre")
@@ -227,17 +239,16 @@ object GroupPopupHelper {
                         .setPositiveButton("Retirer") { _, _ ->
                             scope.launch {
                                 val result = withContext(Dispatchers.IO) {
-                                    runCatching { onlineRepo(activity).removeMember(groupId, member.idUser, currentUserId) }
+                                    runCatching {
+                                        onlineRepo(activity).removeMember(groupId, item.memberId, currentUserId)
+                                    }
                                 }
                                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
                                     Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    loadMembers(activity, scope, groupId, currentUserId, container)
-                                    Toast.makeText(
-                                        activity,
-                                        "$memberName retiré du groupe",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    loadMembers(activity, scope, groupId, currentUserId, avatarsContainer)
+                                    Toast.makeText(activity, "$memberName retiré du groupe", Toast.LENGTH_SHORT)
+                                        .show()
                                 }
                             }
                         }
@@ -246,9 +257,33 @@ object GroupPopupHelper {
                     true
                 }
 
-                container.addView(tvMember)
+                avatarsContainer.addView(tvMember)
             }
         }
+    }
+
+    private data class MemberItem(
+        val memberId: String,
+        val displayName: String?,
+        val initials: String,
+    )
+
+    private fun initialsFrom(prenom: String?, nom: String?, fallbackIndex: Int): String {
+        val p = prenom?.trim().orEmpty()
+        val n = nom?.trim().orEmpty()
+        val first = p.firstOrNull()?.uppercaseChar()?.toString().orEmpty()
+        val second = n.firstOrNull()?.uppercaseChar()?.toString().orEmpty()
+        val out = (first + second).trim()
+        return if (out.isNotEmpty()) out else "M${fallbackIndex + 1}"
+    }
+
+    private inline fun <T, R : Any> List<T>.mapNotNullIndexed(transform: (index: Int, item: T) -> R?): List<R> {
+        val out = ArrayList<R>(size)
+        for (i in indices) {
+            val v = transform(i, this[i]) ?: continue
+            out.add(v)
+        }
+        return out
     }
 
 
@@ -257,7 +292,7 @@ object GroupPopupHelper {
         scope: CoroutineScope,
         groupId: String,
         userId: String,
-        membersContainer: LinearLayout
+        avatarsContainer: LinearLayout
     ) {
         scope.launch {
             val availableFriends = withContext(Dispatchers.IO) {
@@ -288,15 +323,16 @@ object GroupPopupHelper {
 
                         val result = withContext(Dispatchers.IO) {
                             runCatching {
+                                val repo = onlineRepo(activity)
                                 selected.forEach { friend ->
-                                    onlineRepo(activity).addMember(groupId, friend.idUser, userId)
+                                    repo.addMember(groupId, friend.idUser, userId)
                                 }
                             }
                         }
                         if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
                             Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
                         } else {
-                            loadMembers(activity, scope, groupId, userId, membersContainer)
+                            loadMembers(activity, scope, groupId, userId, avatarsContainer)
                             Toast.makeText(
                                 activity,
                                 "${selected.size} membre(s) ajouté(s)",

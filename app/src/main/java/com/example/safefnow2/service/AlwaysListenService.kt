@@ -9,9 +9,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.example.safefnow2.data.remote.RtdbClient
-import com.example.safefnow2.data.remote.RtdbObserve
-import com.example.safefnow2.data.remote.RtdbPaths
+import com.example.safefnow2.data.repository.SosInboxRepository
 import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
@@ -24,8 +22,7 @@ import kotlinx.coroutines.flow.onEach
 class AlwaysListenService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val rtdb by lazy { RtdbClient() }
-    private var lastHandledSosId: String? = null
+    private val inboxRepo by lazy { SosInboxRepository(this) }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -46,20 +43,9 @@ class AlwaysListenService : Service() {
         if (userId.isEmpty()) return
 
         AlertHelper.ensureChannel(this)
-        val sosIdRef = rtdb.ref(RtdbPaths.userSosId(userId))
-
-        RtdbObserve.observe(sosIdRef)
-            .onEach { snap ->
-                val sosId = snap.getValue(String::class.java)?.trim().orEmpty()
-                if (sosId.isEmpty()) return@onEach
-                if (sosId == lastHandledSosId) return@onEach
-                lastHandledSosId = sosId
-
-                val sender = runCatching {
-                    rtdb.get(RtdbPaths.userSosSenderName(userId)).getValue(String::class.java)
-                }.getOrNull()?.trim().orEmpty()
-
-                AlertHelper.startSosIncomingActivity(this, sender, sosId)
+        inboxRepo.incoming(userId)
+            .onEach { incoming ->
+                AlertHelper.startSosIncomingActivity(this, incoming.senderName, incoming.sosId)
             }
             .launchIn(scope)
     }

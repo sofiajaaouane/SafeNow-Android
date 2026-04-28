@@ -43,6 +43,25 @@ class OnlineRepository(
         return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
     }
 
+    private fun declarationMap(
+        userId: String,
+        alertId: String,
+        status: String,
+        createdAt: String,
+        location: String?,
+        lat: Double?,
+        lng: Double?,
+    ): Map<String, Any?> = mapOf(
+        "idUser" to userId,
+        "idAlert" to alertId,
+        "status" to status,
+        "createdAt" to createdAt,
+        "localisation" to location,
+        "latitude" to lat,
+        "longitude" to lng,
+        "updatedAt" to rtdb.serverTimestamp(),
+    )
+
     private suspend fun createAlertAndSenderDeclaration(
         alertId: String,
         senderId: String,
@@ -54,7 +73,7 @@ class OnlineRepository(
         senderLocation: String?,
         senderLat: Double?,
         senderLng: Double?,
-    ) {
+    ): String {
         if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
         val now = nowString()
 
@@ -73,15 +92,14 @@ class OnlineRepository(
             "updatedAt" to rtdb.serverTimestamp(),
         )
 
-        val declMap = mapOf(
-            "idUser" to senderId,
-            "idAlert" to alertId,
-            "status" to "SENT",
-            "createdAt" to now,
-            "localisation" to senderLocation,
-            "latitude" to senderLat,
-            "longitude" to senderLng,
-            "updatedAt" to rtdb.serverTimestamp(),
+        val declMap = declarationMap(
+            userId = senderId,
+            alertId = alertId,
+            status = "SENT",
+            createdAt = now,
+            location = senderLocation,
+            lat = senderLat,
+            lng = senderLng,
         )
 
         val updates = mapOf(
@@ -116,6 +134,7 @@ class OnlineRepository(
                 createdAt = now,
             )
         )
+        return now
     }
 
     suspend fun sendContactSos(
@@ -129,7 +148,7 @@ class OnlineRepository(
     ) {
         if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
         val alertId = UUID.randomUUID().toString()
-        createAlertAndSenderDeclaration(
+        val now = createAlertAndSenderDeclaration(
             alertId = alertId,
             senderId = senderId,
             senderName = senderName,
@@ -142,10 +161,19 @@ class OnlineRepository(
             senderLng = senderLng,
         )
 
-        val updates = mapOf(
+        val updates = mutableMapOf<String, Any?>(
             RtdbPaths.userSosId(receiverId) to alertId,
             RtdbPaths.userSosSenderName(receiverId) to senderName,
             RtdbPaths.userSosCreatedAt(receiverId) to rtdb.serverTimestamp(),
+        )
+        updates[RtdbPaths.declarationAlert(receiverId, alertId)] = declarationMap(
+            userId = receiverId,
+            alertId = alertId,
+            status = "RECEIVED",
+            createdAt = now,
+            location = senderLocation,
+            lat = senderLat,
+            lng = senderLng,
         )
         rtdb.updateChildren("", updates)
         syncRepo.syncNow(senderId)
@@ -288,12 +316,16 @@ class OnlineRepository(
         if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
         if (currentUserId != groupAdminId) throw IllegalStateException("not_admin")
         val membersSnap = rtdb.get(RtdbPaths.groupMembers(groupId))
-        val memberIds = membersSnap.children.mapNotNull { it.key }.filter { it.isNotBlank() }
+        val memberIds = mutableListOf<String>()
+        for (child in membersSnap.children) {
+            val key = child.key?.trim().orEmpty()
+            if (key.isNotEmpty()) memberIds.add(key)
+        }
         if (memberIds.isEmpty()) return
 
         val sosId = UUID.randomUUID().toString()
         val groupName = database.emergencyGroupDao().getById(groupId)?.name
-        createAlertAndSenderDeclaration(
+        val now = createAlertAndSenderDeclaration(
             alertId = sosId,
             senderId = currentUserId,
             senderName = senderName,
@@ -306,10 +338,20 @@ class OnlineRepository(
             senderLng = senderLng,
         )
         val updates = mutableMapOf<String, Any?>()
-        memberIds.filter { it != currentUserId }.forEach { uid ->
+        for (uid in memberIds) {
+            if (uid == currentUserId) continue
             updates[RtdbPaths.userSosId(uid)] = sosId
             updates[RtdbPaths.userSosSenderName(uid)] = senderName
             updates[RtdbPaths.userSosCreatedAt(uid)] = rtdb.serverTimestamp()
+            updates[RtdbPaths.declarationAlert(uid, sosId)] = declarationMap(
+                userId = uid,
+                alertId = sosId,
+                status = "RECEIVED",
+                createdAt = now,
+                location = senderLocation,
+                lat = senderLat,
+                lng = senderLng,
+            )
         }
         if (updates.isNotEmpty()) {
             rtdb.updateChildren("", updates)
@@ -326,11 +368,14 @@ class OnlineRepository(
     ): Int {
         if (!guard.requireOnline()) throw OfflineWriteNotAllowed()
         val membershipSnap = rtdb.get(RtdbPaths.groupMembersByUser(currentUserId))
-        val groupIds = membershipSnap.children.mapNotNull { it.key }.filter { it.isNotBlank() }
+        val groupIds = mutableListOf<String>()
+        for (child in membershipSnap.children) {
+            val key = child.key?.trim().orEmpty()
+            if (key.isNotEmpty()) groupIds.add(key)
+        }
         if (groupIds.isEmpty()) return 0
 
         val sosId = UUID.randomUUID().toString()
-        val updates = mutableMapOf<String, Any?>()
         val receivers = linkedSetOf<String>()
 
         for (groupId in groupIds) {
@@ -341,36 +386,48 @@ class OnlineRepository(
             if (!anyToBool(sosGlobalVal)) continue
 
             val membersSnap = rtdb.get(RtdbPaths.groupMembers(groupId))
-            membersSnap.children.mapNotNull { it.key }
-                .filter { it.isNotBlank() && it != currentUserId }
-                .forEach { uid ->
-                    receivers.add(uid)
-                    updates[RtdbPaths.userSosId(uid)] = sosId
-                    updates[RtdbPaths.userSosSenderName(uid)] = senderName
-                    updates[RtdbPaths.userSosCreatedAt(uid)] = rtdb.serverTimestamp()
-                }
+            for (child in membersSnap.children) {
+                val uid = child.key?.trim().orEmpty()
+                if (uid.isEmpty()) continue
+                if (uid == currentUserId) continue
+                receivers.add(uid)
+            }
         }
 
-        if (receivers.isNotEmpty()) {
-            createAlertAndSenderDeclaration(
+        if (receivers.isEmpty()) return 0
+
+        val now = createAlertAndSenderDeclaration(
+            alertId = sosId,
+            senderId = currentUserId,
+            senderName = senderName,
+            typeAlert = "SOS GLOBAL",
+            targetType = "GLOBAL",
+            targetId = null,
+            targetName = null,
+            senderLocation = senderLocation,
+            senderLat = senderLat,
+            senderLng = senderLng,
+        )
+
+        val updates = mutableMapOf<String, Any?>()
+        receivers.forEach { uid ->
+            updates[RtdbPaths.userSosId(uid)] = sosId
+            updates[RtdbPaths.userSosSenderName(uid)] = senderName
+            updates[RtdbPaths.userSosCreatedAt(uid)] = rtdb.serverTimestamp()
+            updates[RtdbPaths.declarationAlert(uid, sosId)] = declarationMap(
+                userId = uid,
                 alertId = sosId,
-                senderId = currentUserId,
-                senderName = senderName,
-                typeAlert = "SOS GLOBAL",
-                targetType = "GLOBAL",
-                targetId = null,
-                targetName = null,
-                senderLocation = senderLocation,
-                senderLat = senderLat,
-                senderLng = senderLng,
+                status = "RECEIVED",
+                createdAt = now,
+                location = senderLocation,
+                lat = senderLat,
+                lng = senderLng,
             )
         }
         if (updates.isNotEmpty()) {
             rtdb.updateChildren("", updates)
         }
-        if (receivers.isNotEmpty()) {
-            syncRepo.syncNow(currentUserId)
-        }
+        syncRepo.syncNow(currentUserId)
         return receivers.size
     }
 

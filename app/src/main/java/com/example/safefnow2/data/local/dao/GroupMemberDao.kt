@@ -31,6 +31,9 @@ interface GroupMemberDao {
     @Query("SELECT * FROM group_member WHERE id_group = :idGroup")
     suspend fun getByGroupId(idGroup: String): List<GroupMember>
 
+    @Query("SELECT * FROM group_member WHERE id_group = :idGroup")
+    fun getByGroupIdFlow(idGroup: String): Flow<List<GroupMember>>
+
     @Query("SELECT * FROM group_member WHERE id_user = :idUser")
     suspend fun getByUserId(idUser: String): List<GroupMember>
 

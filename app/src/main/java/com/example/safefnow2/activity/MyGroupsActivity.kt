@@ -12,11 +12,12 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.viewModels
 import com.example.safefnow2.R
-import com.example.safefnow2.data.local.DatabaseProvider
-import com.example.safefnow2.data.local.entity.EmergencyGroup
-import com.example.safefnow2.util.GroupPopupHelper
 import com.example.safefnow2.util.SessionManager
+import com.example.safefnow2.ui.groups.GroupPopupDialogFragment
+import com.example.safefnow2.ui.groups.MyGroupsViewModel
+import com.example.safefnow2.ui.groups.GroupRowUi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,10 +29,9 @@ class MyGroupsActivity : AppCompatActivity() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    private val emergencyGroupDao by lazy { DatabaseProvider.get(this).emergencyGroupDao() }
-    private val groupMemberDao    by lazy { DatabaseProvider.get(this).groupMemberDao() }
+    private val vm: MyGroupsViewModel by viewModels()
 
-    private var allGroups: List<EmergencyGroup> = emptyList()
+    private var allGroups: List<GroupRowUi> = emptyList()
     private lateinit var llGroups: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,28 +56,19 @@ class MyGroupsActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        loadGroups()
+        observeGroups()
     }
 
-    private fun loadGroups() {
+    private fun observeGroups() {
         val userId = SessionManager.getCurrentUserId(this) ?: run { finish(); return }
-
-        scope.launch {
-            val groups = withContext(Dispatchers.IO) {
-                val memberEntries = groupMemberDao.getByUserId(userId)
-                memberEntries.mapNotNull { emergencyGroupDao.getById(it.idGroup) }
-            }
+        vm.myGroups(userId).observe(this) { groups ->
             allGroups = groups
-            displayGroups(groups)
+            scope.launch { displayGroups(groups) }
         }
     }
 
-    private suspend fun displayGroups(groups: List<EmergencyGroup>) {
-        val groupsWithCount = withContext(Dispatchers.IO) {
-            groups.map { group ->
-                Pair(group, groupMemberDao.getByGroupId(group.idGroup).size)
-            }
-        }
+    private suspend fun displayGroups(groups: List<GroupRowUi>) {
+        val groupsWithCount = groups.map { row -> Pair(row.group, row.memberCount) }
 
         llGroups.removeAllViews()
 
@@ -97,24 +88,26 @@ class MyGroupsActivity : AppCompatActivity() {
         }
     }
 
-    private fun addGroupRow(group: EmergencyGroup, memberCount: Int) {
+    private fun addGroupRow(group: com.example.safefnow2.data.local.entity.EmergencyGroup, memberCount: Int) {
         val userId = SessionManager.getCurrentUserId(this) ?: return
 
         val row = LayoutInflater.from(this).inflate(R.layout.item_group, llGroups, false)
 
-        row.findViewById<TextView>(R.id.tvGroupAvatar).text  = group.name.take(2).uppercase()
-        row.findViewById<TextView>(R.id.tvGroupName).text    = group.name
+        row.findViewById<TextView>(R.id.tvGroupAvatar).text = group.name.take(2).uppercase()
+        row.findViewById<TextView>(R.id.tvGroupName).text = group.name
         row.findViewById<TextView>(R.id.tvMemberCount).text  =
             "$memberCount membre${if (memberCount > 1) "s" else ""}"
 
         row.setOnClickListener {
-            GroupPopupHelper.show(
-                activity = this,
-                scope    = scope,
-                group    = group,
-                userId   = userId,
-                onGroupDeleted = { loadGroups() }
-            )
+            GroupPopupDialogFragment
+                .newInstance(
+                    groupId = group.idGroup,
+                    groupName = group.name,
+                    adminId = group.idAdmin,
+                    sosGlobal = group.sosGlobal,
+                    currentUserId = userId,
+                )
+                .show(supportFragmentManager, "group_popup")
         }
 
         llGroups.addView(row)
@@ -129,13 +122,12 @@ class MyGroupsActivity : AppCompatActivity() {
 
     private fun filterGroups(query: String) {
         val filtered = if (query.isEmpty()) allGroups
-        else allGroups.filter { it.name.contains(query, ignoreCase = true) }
+        else allGroups.filter { it.group.name.contains(query, ignoreCase = true) }
         scope.launch { displayGroups(filtered) }
     }
 
     override fun onResume() {
         super.onResume()
-        loadGroups()
     }
 
     override fun onDestroy() {

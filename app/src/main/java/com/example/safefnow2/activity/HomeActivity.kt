@@ -24,8 +24,6 @@ import com.example.safefnow2.data.local.entity.DeclarationAlert
 import com.example.safefnow2.data.local.entity.User
 import com.example.safefnow2.data.remote.RtdbClient
 import com.example.safefnow2.data.remote.RtdbObserve
-import com.example.safefnow2.data.repository.GroupsOnlineFirstRepository
-import com.example.safefnow2.data.repository.UserOnlineFirstRepository
 import com.example.safefnow2.data.repository.OnlineRepository
 import com.example.safefnow2.data.sync.SyncScheduler
 import com.example.safefnow2.ui.sos.SosUiEvent
@@ -34,12 +32,14 @@ import com.example.safefnow2.data.remote.RtdbPaths
 import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.DeviceIdProvider
-import com.example.safefnow2.util.GroupPopupHelper
 import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.RequiredPermissions
 import com.example.safefnow2.util.SessionManager
 import com.example.safefnow2.service.AlwaysListenPrefs
 import com.example.safefnow2.service.AlwaysListenService
+import com.example.safefnow2.ui.groups.GroupPopupDialogFragment
+import com.example.safefnow2.ui.home.HomeViewModel
+import com.example.safefnow2.ui.session.SessionViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -63,8 +63,8 @@ class HomeActivity : AppCompatActivity() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val sosViewModel: SosViewModel by viewModels()
-    private val userRepo by lazy { UserOnlineFirstRepository(this) }
-    private val groupsRepo by lazy { GroupsOnlineFirstRepository(this) }
+    private val homeVm: HomeViewModel by viewModels()
+    private val sessionVm: SessionViewModel by viewModels()
     private var cachedSenderName: String = "SafeNow"
     
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -76,10 +76,19 @@ class HomeActivity : AppCompatActivity() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         
         AlertHelper.ensureChannel(this)
+
+        sessionVm.forceLogout.observe(this) { ev ->
+            ev.getIfNotHandled() ?: return@observe
+            AlwaysListenService.stop(this@HomeActivity)
+            startActivity(Intent(this@HomeActivity, LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+            finish()
+        }
+        sessionVm.validateSessionAndLogoutIfDeleted()
         if (AlwaysListenPrefs(this).isEnabled()) {
             AlwaysListenService.start(this)
         }
-        startSosIdListenerWhileOpen()
         
         SyncScheduler.enqueueOneTime(this)
         ConnectivityObserver(this).isOnlineFlow()
@@ -127,38 +136,13 @@ class HomeActivity : AppCompatActivity() {
                     "Position indisponible (Vérifiez votre GPS)"
                 }
 
-                withContext(Dispatchers.IO) {
-                    val result = runCatching {
-                        OnlineRepository(
-                            DatabaseProvider.get(this@HomeActivity),
-                            OnlineWriteGuard(ConnectivityObserver(this@HomeActivity).isOnlineFlow()),
-                            RtdbClient()
-                        ).sendGlobalSosToActiveGroups(
-                            currentUserId = userId,
-                            senderName = cachedSenderName,
-                            senderLocation = locationStr,
-                            senderLat = location?.latitude,
-                            senderLng = location?.longitude,
-                        )
-                    }
-                    withContext(Dispatchers.Main) {
-                        if (result.isFailure) {
-                            val ex = result.exceptionOrNull()
-                            if (ex is com.example.safefnow2.data.repository.OfflineWriteNotAllowed) {
-                                Toast.makeText(this@HomeActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(this@HomeActivity, (ex?.message ?: "Erreur SOS"), Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            val count = result.getOrNull() ?: 0
-                            if (count <= 0) {
-                                Toast.makeText(this@HomeActivity, "Aucun groupe SOS activé", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(this@HomeActivity, getString(R.string.toast_sos_sent), Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }
-                }
+                homeVm.sendGlobalSos(
+                    userId = userId,
+                    senderName = cachedSenderName,
+                    senderLocation = locationStr,
+                    senderLat = location?.latitude,
+                    senderLng = location?.longitude,
+                )
             }
         }
 
@@ -190,36 +174,40 @@ class HomeActivity : AppCompatActivity() {
 
         val userId = SessionManager.getCurrentUserId(this) ?: return
 
-        lifecycleScope.launch {
-            userRepo.user(userId).collect { u ->
-                if (u != null) {
-                    tvUserName.text = u.prenom
-                    cachedSenderName = "${u.prenom} ${u.nom}".trim().ifEmpty { "SafeNow" }
-                    val initials = buildString {
-                        u.prenom.firstOrNull()?.uppercaseChar()?.let { c -> append(c) }
-                        u.nom.firstOrNull()?.uppercaseChar()?.let { c -> append(c) }
-                    }
-                    if (initials.isNotEmpty()) tvInitials.text = initials
-                    sosViewModel.syncDeviceRegistration(
-                        displayName = cachedSenderName,
-                        phone = u.numTel,
-                        appUserId = u.idUser
-                    )
+        homeVm.user(userId).observe(this) { u ->
+            if (u != null) {
+                tvUserName.text = u.prenom
+                cachedSenderName = "${u.prenom} ${u.nom}".trim().ifEmpty { "SafeNow" }
+                val initials = buildString {
+                    u.prenom.firstOrNull()?.uppercaseChar()?.let { c -> append(c) }
+                    u.nom.firstOrNull()?.uppercaseChar()?.let { c -> append(c) }
                 }
+                if (initials.isNotEmpty()) tvInitials.text = initials
+                sosViewModel.syncDeviceRegistration(
+                    displayName = cachedSenderName,
+                    phone = u.numTel,
+                    appUserId = u.idUser
+                )
             }
         }
 
-        lifecycleScope.launch {
-            groupsRepo.pendingInvitesCount(userId).collect { count ->
-                findViewById<View>(R.id.badgeNotif)?.visibility =
-                    if (count > 0) View.VISIBLE else View.GONE
-            }
+        homeVm.pendingInvitesCount(userId).observe(this) { count ->
+            findViewById<View>(R.id.badgeNotif)?.visibility =
+                if (count > 0) View.VISIBLE else View.GONE
         }
 
-        lifecycleScope.launch {
-            groupsRepo.myGroups(userId).collect { groups ->
-                renderGroupsStories(llGroupsStories, groups, userId)
-            }
+        homeVm.myGroups(userId).observe(this) { groups ->
+            renderGroupsStories(llGroupsStories, groups, userId)
+        }
+
+        homeVm.incomingSos(userId).observe(this) { ev ->
+            val incoming = ev.getIfNotHandled() ?: return@observe
+            AlertHelper.startSosIncomingActivity(this@HomeActivity, incoming.senderName, incoming.sosId)
+        }
+
+        homeVm.toast.observe(this) { ev ->
+            val msg = ev.getIfNotHandled() ?: return@observe
+            Toast.makeText(this@HomeActivity, msg, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -253,28 +241,6 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun startSosIdListenerWhileOpen() {
-        val userId = SessionManager.getCurrentUserId(this)?.trim().orEmpty()
-        if (userId.isEmpty()) return
-        val rtdb = RtdbClient()
-        val ref = rtdb.ref(RtdbPaths.userSosId(userId))
-        var lastId: String? = null
-
-        RtdbObserve.observe(ref)
-            .onEach { snap ->
-                val sosId = snap.getValue(String::class.java)?.trim().orEmpty()
-                if (sosId.isEmpty()) return@onEach
-                if (sosId == lastId) return@onEach
-                lastId = sosId
-
-                val sender = runCatching {
-                    rtdb.get(RtdbPaths.userSosSenderName(userId)).getValue(String::class.java)
-                }.getOrNull()?.trim().orEmpty()
-                AlertHelper.startSosIncomingActivity(this, sender, sosId)
-            }
-            .launchIn(lifecycleScope)
-    }
-
     private fun renderGroupsStories(container: LinearLayout?, groups: List<com.example.safefnow2.data.local.entity.EmergencyGroup>, userId: String) {
         if (container == null) return
         if (container.childCount > 1) {
@@ -291,13 +257,15 @@ class HomeActivity : AppCompatActivity() {
                 group.name.take(8)
 
             storyView.setOnClickListener {
-                GroupPopupHelper.show(
-                    activity = this@HomeActivity,
-                    scope = scope,
-                    group = group,
-                    userId = userId,
-                    onGroupDeleted = { }
-                )
+                GroupPopupDialogFragment
+                    .newInstance(
+                        groupId = group.idGroup,
+                        groupName = group.name,
+                        adminId = group.idAdmin,
+                        sosGlobal = group.sosGlobal,
+                        currentUserId = userId,
+                    )
+                    .show(supportFragmentManager, "group_popup")
             }
 
             container.addView(storyView)
