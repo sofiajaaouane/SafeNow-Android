@@ -71,14 +71,23 @@ class SyncRepository(
         for (groupId in groupIds) {
             val groupSnap = rtdb.get(RtdbPaths.emergencyGroup(groupId))
             val group = groupSnap.toEmergencyGroup() ?: continue
-            database.emergencyGroupDao().insert(group)
+            // Ensure referenced admin User exists before inserting emergency_group (FK constraint).
+            syncUser(group.idAdmin)
+            if (database.userDao().getById(group.idAdmin) == null) continue
+            runCatching { database.emergencyGroupDao().insert(group) }
+            if (database.emergencyGroupDao().getById(groupId) == null) continue
 
             val membersSnap = rtdb.get(RtdbPaths.groupMembers(groupId))
             database.groupMemberDao().deleteByGroupId(groupId)
             for (m in membersSnap.children) {
                 val memberUserId = m.key ?: continue
-                database.groupMemberDao().insert(GroupMember(idGroup = groupId, idUser = memberUserId))
+                // Ensure referenced User exists before inserting group_member (FK constraint).
                 syncUser(memberUserId)
+                val exists = database.userDao().getById(memberUserId) != null
+                if (!exists) continue
+                runCatching {
+                    database.groupMemberDao().insert(GroupMember(idGroup = groupId, idUser = memberUserId))
+                }
             }
 
             val itemsSnap = rtdb.get(RtdbPaths.groupItems(groupId))

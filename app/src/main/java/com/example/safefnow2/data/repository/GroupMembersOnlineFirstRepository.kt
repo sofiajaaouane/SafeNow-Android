@@ -39,7 +39,13 @@ class GroupMembersOnlineFirstRepository(context: Context) {
                             val groupSnap = rtdb.get(RtdbPaths.emergencyGroup(groupId))
                             val group = groupSnap.toEmergencyGroup()
                             if (group != null) {
+                                // Ensure admin user exists before inserting emergency_group (FK constraint).
+                                val adminSnap = rtdb.get(RtdbPaths.user(group.idAdmin))
+                                val adminUser = adminSnap.toUser()
+                                if (adminUser != null) db.userDao().insert(adminUser)
+                                if (db.userDao().getById(group.idAdmin) != null) {
                                 db.emergencyGroupDao().insert(group)
+                                }
                             }
 
                             db.groupMemberDao().deleteByGroupId(groupId)
@@ -54,7 +60,11 @@ class GroupMembersOnlineFirstRepository(context: Context) {
                             }
 
                             memberIds.forEach { uid ->
-                                db.groupMemberDao().insert(GroupMember(idGroup = groupId, idUser = uid))
+                                if (db.userDao().getById(uid) == null) return@forEach
+                                if (db.emergencyGroupDao().getById(groupId) == null) return@forEach
+                                runCatching {
+                                    db.groupMemberDao().insert(GroupMember(idGroup = groupId, idUser = uid))
+                                }
                             }
                         }
                     }
