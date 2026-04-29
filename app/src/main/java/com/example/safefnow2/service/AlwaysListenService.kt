@@ -9,20 +9,30 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.data.remote.RtdbClient
+import com.example.safefnow2.data.remote.RtdbObserve
+import com.example.safefnow2.data.remote.RtdbPaths
 import com.example.safefnow2.data.repository.SosInboxRepository
+import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 class AlwaysListenService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val inboxRepo by lazy { SosInboxRepository(this) }
+    private val rtdb by lazy { RtdbClient() }
+    private val syncRepo by lazy { SyncRepository(DatabaseProvider.get(this), rtdb) }
+    private var syncJob: kotlinx.coroutines.Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -30,6 +40,7 @@ class AlwaysListenService : Service() {
         ensureChannel()
         startForeground(NOTIF_ID, buildNotification())
         startSosListenerIfLoggedIn()
+        startRealtimeSyncIfLoggedIn()
         return START_STICKY
     }
 
@@ -47,6 +58,39 @@ class AlwaysListenService : Service() {
             .onEach { incoming ->
                 AlertHelper.startSosIncomingActivity(this, incoming.senderName, incoming.sosId)
             }
+            .launchIn(scope)
+    }
+
+    private fun startRealtimeSyncIfLoggedIn() {
+        val userId = SessionManager.getCurrentUserId(this)?.trim().orEmpty()
+        if (userId.isEmpty()) return
+
+        fun scheduleSync() {
+            syncJob?.cancel()
+            syncJob = scope.launch {
+                delay(500)
+                runCatching { syncRepo.syncNow(userId) }
+            }
+        }
+
+        // Initial sync.
+        scheduleSync()
+
+        // Watch key RTDB paths and refresh Room cache when they change.
+        RtdbObserve.observe(rtdb.ref(RtdbPaths.groupMembersByUser(userId)))
+            .onEach { scheduleSync() }
+            .launchIn(scope)
+
+        RtdbObserve.observe(rtdb.ref(RtdbPaths.declarationAlerts(userId)))
+            .onEach { scheduleSync() }
+            .launchIn(scope)
+
+        RtdbObserve.observe(rtdb.ref(RtdbPaths.friendshipOut(userId)))
+            .onEach { scheduleSync() }
+            .launchIn(scope)
+
+        RtdbObserve.observe(rtdb.ref(RtdbPaths.friendshipIn(userId)))
+            .onEach { scheduleSync() }
             .launchIn(scope)
     }
 

@@ -4,13 +4,17 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.LayoutInflater
+import android.view.Gravity
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.remote.RtdbClient
@@ -18,6 +22,8 @@ import com.example.safefnow2.data.local.entity.EmergencyGroup
 import com.example.safefnow2.data.local.entity.Item
 import com.example.safefnow2.data.repository.OfflineWriteNotAllowed
 import com.example.safefnow2.data.repository.OnlineRepository
+import com.example.safefnow2.data.local.entity.User
+import com.example.safefnow2.ui.groups.CreateGroupViewModel
 import com.example.safefnow2.util.ConnectivityObserver
 import com.example.safefnow2.util.OnlineWriteGuard
 import com.example.safefnow2.util.SessionManager
@@ -33,6 +39,7 @@ class CreateGroupActivity : ComponentActivity() {
 
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val vm: CreateGroupViewModel by viewModels()
 
 
     private val onlineRepo by lazy {
@@ -42,6 +49,7 @@ class CreateGroupActivity : ComponentActivity() {
 
 
     private lateinit var llNecessities: LinearLayout
+    private lateinit var llMemberAvatars: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,10 +62,32 @@ class CreateGroupActivity : ComponentActivity() {
         val btnAddItem         = findViewById<TextView>(R.id.btnAddItem)
         val btnCreateGroup     = findViewById<TextView>(R.id.btnCreateGroup)
         val btnReturn          = findViewById<ImageButton>(R.id.btnReturn)
+        val btnAddMember       = findViewById<TextView>(R.id.btnAddGroupMember)
         llNecessities          = findViewById(R.id.llNecessities)
+        llMemberAvatars        = findViewById(R.id.llCreateGroupMembersAvatars)
 
 
         btnReturn.setOnClickListener { finish() }
+
+        vm.selectedMembers.observe(this) { members ->
+            renderMemberAvatars(members)
+        }
+
+        btnAddMember.setOnClickListener {
+            val userId = SessionManager.getCurrentUserId(this) ?: run {
+                redirectToLogin()
+                return@setOnClickListener
+            }
+            vm.loadFriends(userId) { friends ->
+                val currentIds = vm.selectedMembers.value.orEmpty().map { it.idUser }.toSet()
+                val available = friends.filter { it.idUser !in currentIds && it.idUser != userId }
+                if (available.isEmpty()) {
+                    Toast.makeText(this, "Aucun contact disponible à ajouter", Toast.LENGTH_SHORT).show()
+                    return@loadFriends
+                }
+                showPickMembersDialog(available)
+            }
+        }
 
 
         btnAddItem.setOnClickListener {
@@ -150,6 +180,22 @@ class CreateGroupActivity : ComponentActivity() {
                     return@launch
                 }
 
+                val selectedIds = vm.selectedMembers.value.orEmpty().map { it.idUser }.distinct()
+                    .filter { it.isNotBlank() && it != userId }
+                if (selectedIds.isNotEmpty()) {
+                    val addResult = withContext(Dispatchers.IO) {
+                        runCatching {
+                            selectedIds.forEach { mid ->
+                                onlineRepo.addMember(groupId, mid, userId)
+                            }
+                        }
+                    }
+                    if (addResult.isFailure && addResult.exceptionOrNull() is OfflineWriteNotAllowed) {
+                        Toast.makeText(this@CreateGroupActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+                }
+
                 Toast.makeText(
                     this@CreateGroupActivity,
                     "Groupe \"$title\" cree avec succes",
@@ -166,6 +212,49 @@ class CreateGroupActivity : ComponentActivity() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         })
         finish()
+    }
+
+    private fun showPickMembersDialog(available: List<User>) {
+        val names = available.map { "${it.prenom} ${it.nom}".trim() }.toTypedArray()
+        val checked = BooleanArray(available.size) { false }
+        AlertDialog.Builder(this)
+            .setTitle("Ajouter des membres")
+            .setMultiChoiceItems(names, checked) { _, index, isChecked ->
+                checked[index] = isChecked
+            }
+            .setPositiveButton("Ajouter") { _, _ ->
+                val selected = available.filterIndexed { idx, _ -> checked[idx] }
+                vm.addSelected(selected)
+            }
+            .setNegativeButton("Annuler", null)
+            .show()
+    }
+
+    private fun renderMemberAvatars(members: List<User>) {
+        llMemberAvatars.removeAllViews()
+        val dp = resources.displayMetrics.density
+        val size = (44 * dp).toInt()
+        val marginEnd = (8 * dp).toInt()
+
+        members.forEachIndexed { idx, u ->
+            val params = LinearLayout.LayoutParams(size, size).apply { this.marginEnd = marginEnd }
+            val tv = TextView(this)
+            tv.layoutParams = params
+            val initials = buildString {
+                u.prenom.trim().firstOrNull()?.uppercaseChar()?.let { append(it) }
+                u.nom.trim().firstOrNull()?.uppercaseChar()?.let { append(it) }
+            }.ifEmpty { "M${idx + 1}" }
+            tv.text = initials
+            tv.textSize = 13f
+            tv.setTextColor(0xFFFFFFFF.toInt())
+            tv.gravity = Gravity.CENTER
+            tv.setBackgroundResource(R.drawable.step_circle_active)
+            tv.setOnLongClickListener {
+                vm.removeSelected(u.idUser)
+                true
+            }
+            llMemberAvatars.addView(tv)
+        }
     }
 
 
