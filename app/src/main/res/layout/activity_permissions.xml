@@ -45,7 +45,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Autorisations requises"
+                android:text="@string/permissions_title"
                 android:textColor="#FFFFFF"
                 android:textSize="20sp"
                 android:textStyle="bold"
@@ -54,7 +54,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Activez les permissions pour que SafeNow\npuisse vous proteger efficacement"
+                android:text="@string/permissions_subtitle"
                 android:textColor="#CCFFFFFF"
                 android:textSize="12sp"
                 android:gravity="center"
@@ -85,7 +85,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ESSENTIELLES"
+                android:text="@string/permissions_essential"
                 android:textColor="#222222"
                 android:textSize="11sp"
                 android:textStyle="bold"
@@ -131,7 +131,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Localisation precise (GPS)"
+                    android:text="@string/permissions_location_title"
                     android:textColor="#111111"
                     android:textSize="14sp"
                     android:textStyle="bold"
@@ -140,7 +140,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Envoyer votre position exacte aux secours"
+                    android:text="@string/permissions_location_desc"
                     android:textColor="#999999"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -186,7 +186,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Sons/Vibrations de notification"
+                    android:text="@string/permissions_notifications_title"
                     android:textColor="#111111"
                     android:textSize="14sp"
                     android:textStyle="bold"
@@ -195,7 +195,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Runtime (Boîte de dialogue)"
+                    android:text="@string/permissions_notifications_desc"
                     android:textColor="#999999"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -241,7 +241,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Telephone (appels)"
+                    android:text="@string/permissions_phone_title"
                     android:textColor="#111111"
                     android:textSize="14sp"
                     android:textStyle="bold"
@@ -250,7 +250,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Appel direct vers le 15, 17, 18 ou 112"
+                    android:text="@string/permissions_phone_desc"
                     android:textColor="#999999"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -271,7 +271,7 @@
             android:id="@+id/btnContinuePermissions"
             android:layout_width="match_parent"
             android:layout_height="54dp"
-            android:text="CONTINUER"
+            android:text="@string/permissions_continue"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
             android:textStyle="bold"

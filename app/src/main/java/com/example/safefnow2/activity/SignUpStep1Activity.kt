@@ -43,12 +43,12 @@ class SignUpStep1Activity : ComponentActivity() {
 
         btnNext.setOnClickListener {
             if (spinner.selectedItemPosition < 0) {
-                Toast.makeText(this, "Selectionnez le pays puis entrez exactement 9 chiffres", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.signup_toast_select_country_digits), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             val localNumber = etPhone.text.toString().trim()
             if (localNumber.length != 9 || !localNumber.all { it.isDigit() }) {
-                Toast.makeText(this, "Selectionnez le pays puis entrez exactement 9 chiffres", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.signup_toast_select_country_digits), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             val code = countries[spinner.selectedItemPosition].second
@@ -72,7 +72,7 @@ class SignUpStep1Activity : ComponentActivity() {
                 }
 
                 if (isTaken) {
-                    Toast.makeText(this@SignUpStep1Activity, "Ce numero est deja utilise", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@SignUpStep1Activity, getString(R.string.signup_phone_already_used), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
 

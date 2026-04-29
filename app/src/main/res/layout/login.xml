@@ -101,7 +101,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Connexion"
+                android:text="@string/login_title"
                 android:textColor="#111111"
                 android:textSize="22sp"
                 android:textStyle="bold"
@@ -111,7 +111,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Acces a votre espace securise"
+                android:text="@string/login_subtitle"
                 android:textColor="#999999"
                 android:textSize="13sp"
                 android:layout_marginBottom="28dp" />
@@ -120,7 +120,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="NUMERO DE COMPTE"
+                android:text="@string/login_account_number"
                 android:textColor="#AAAAAA"
                 android:textSize="10sp"
                 android:textStyle="bold"
@@ -148,7 +148,7 @@
                     android:id="@+id/editLoginPhone"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:hint="Entrez votre numero"
+                    android:hint="@string/login_hint_phone"
                     android:textColorHint="#CCCCCC"
                     android:textColor="#111111"
                     android:textSize="15sp"
@@ -161,7 +161,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="MOT DE PASSE"
+                android:text="@string/login_password"
                 android:textColor="#AAAAAA"
                 android:textSize="10sp"
                 android:textStyle="bold"
@@ -190,7 +190,7 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:hint="Entrez votre mot de passe"
+                    android:hint="@string/login_hint_password"
                     android:textColorHint="#CCCCCC"
                     android:textColor="#111111"
                     android:textSize="15sp"
@@ -210,7 +210,7 @@
                 android:id="@+id/btnLogin"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
-                android:text="SE CONNECTER"
+                android:text="@string/login_btn_sign_in"
                 android:textColor="#000000"
                 android:textSize="15sp"
                 android:textStyle="bold"
@@ -237,7 +237,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="  OU  "
+                    android:text="@string/common_or"
                     android:textColor="#CCCCCC"
                     android:textSize="11sp" />
 
@@ -259,7 +259,7 @@
                     android:id="@+id/tvCreateAccount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Creer un compte"
+                    android:text="@string/login_create_account"
                     android:textColor="#CC0000"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -272,7 +272,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Mot de passe oublie ?"
+                    android:text="@string/login_forgot_password"
                     android:textColor="#AAAAAA"
                     android:textSize="13sp" />
             </LinearLayout>
@@ -288,7 +288,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="2026 SafeNow - Securise et Certifie"
+            android:text="@string/login_footer"
             android:textColor="#CCCCCC"
             android:textSize="11sp"
             android:gravity="center"

@@ -27,7 +27,7 @@
                 android:layout_margin="16dp"
                 android:src="@drawable/ic_arrow_back"
                 android:background="@drawable/circle_white_20"
-                android:tint="#D32F2F"
+                app:tint="#D32F2F"
                 android:contentDescription="@string/back" />
             <ImageButton
                 android:id="@+id/btnLogout"
@@ -37,7 +37,7 @@
                 android:layout_alignParentEnd="true"
                 android:src="@drawable/ic_logout"
                 android:background="@drawable/circle_white_20"
-                android:tint="#D32F2F"
+                app:tint="#D32F2F"
                 android:contentDescription="@string/logout" />
             <!-- Avatar + nom centré -->
             <LinearLayout
@@ -54,7 +54,7 @@
                     android:src="@drawable/ic_user"
                     android:background="@drawable/avatar_background"
                     android:padding="20dp"
-                    android:tint="#D32F2F"
+                    app:tint="#D32F2F"
                     android:contentDescription="@string/user_icon" />
 
                 <TextView
@@ -603,7 +603,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_visibility_off"
                         android:background="@null"
-                        android:tint="#BDBDBD"
+                        app:tint="#BDBDBD"
                         android:contentDescription="@string/toggle_password" />
                 </LinearLayout>
 

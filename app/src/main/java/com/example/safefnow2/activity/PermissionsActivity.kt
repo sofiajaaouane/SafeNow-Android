@@ -95,7 +95,7 @@ class PermissionsActivity : ComponentActivity() {
         findViewById<Button>(R.id.btnContinuePermissions).setOnClickListener {
             if (intent.getBooleanExtra(EXTRA_REQUEST_ONLY, false)) {
                 if (!RequiredPermissions.allGranted(this)) {
-                    Toast.makeText(this, "Activez les 3 permissions", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.permissions_toast_enable_all), Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
                 goHome()
@@ -151,7 +151,7 @@ class PermissionsActivity : ComponentActivity() {
         val lastName = intent.getStringExtra(SignUpStep3Activity.EXTRA_LAST_NAME) ?: ""
 
         if (phone.isEmpty() || passwordHash.isEmpty() || firstName.isEmpty() || lastName.isEmpty()) {
-            Toast.makeText(this, "Donnees manquantes", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.common_missing_data), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -202,22 +202,22 @@ class PermissionsActivity : ComponentActivity() {
 
             when (precheck) {
                 "OFFLINE" -> {
-                    Toast.makeText(this@PermissionsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@PermissionsActivity, getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
                 "PHONE_TAKEN" -> {
-                    Toast.makeText(this@PermissionsActivity, "Ce numero est deja utilise", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@PermissionsActivity, getString(R.string.permissions_phone_already_used), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
                 "EMAIL_TAKEN" -> {
-                    Toast.makeText(this@PermissionsActivity, "Cet email est deja utilise", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@PermissionsActivity, getString(R.string.permissions_email_already_used), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
             }
 
             val result = withContext(Dispatchers.IO) { runCatching { onlineRepo.createAccount(user.copy(email = email?.trim()?.lowercase()?.ifEmpty { null })) } }
             if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                Toast.makeText(this@PermissionsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@PermissionsActivity, getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                 return@launch
             }
             runCatching {

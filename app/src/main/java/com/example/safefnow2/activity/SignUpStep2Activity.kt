@@ -49,11 +49,11 @@ class SignUpStep2Activity : ComponentActivity() {
             val password = etPassword.text.toString()
             val email = etEmail.text.toString().trim()
             if (password.isEmpty()) {
-                Toast.makeText(this, "Entrez un mot de passe", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.signup_toast_enter_password), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (password.length < 7) {
-                Toast.makeText(this, "Le mot de passe doit contenir au moins 7 caracteres", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.signup_toast_password_min_len), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             lifecycleScope.launch {
@@ -77,7 +77,7 @@ class SignUpStep2Activity : ComponentActivity() {
                         }
                     }
                     if (isTaken) {
-                        Toast.makeText(this@SignUpStep2Activity, "Cet email est deja utilise", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@SignUpStep2Activity, getString(R.string.signup_email_already_used), Toast.LENGTH_SHORT).show()
                         return@launch
                     }
                 }

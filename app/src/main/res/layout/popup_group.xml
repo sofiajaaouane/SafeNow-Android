@@ -20,7 +20,7 @@
             android:id="@+id/tvPopupGroupAvatar"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:text="G"
+        android:text="@string/group_avatar_placeholder"
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#FFFFFF"
@@ -32,7 +32,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Groupe"
+        android:text="@string/create_group_title"
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#1A1A1A"
@@ -91,7 +91,7 @@
         android:id="@+id/tvPopupMembersLoading"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Chargement des données..."
+        android:text="@string/group_loading"
         android:textSize="12sp"
         android:textColor="#999999"
         android:visibility="gone"
@@ -101,7 +101,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Appui long pour retirer un membre (ou via +)"
+        android:text="@string/group_long_press_help"
         android:textSize="11sp"
         android:textColor="#BBBBBB"
         android:layout_marginBottom="24dp" />
@@ -146,7 +146,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="SOS"
+                        android:text="@string/group_sos"
                         android:textColor="#FFFFFF"
                         android:textSize="22sp"
                         android:textStyle="bold"
@@ -155,7 +155,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Aide immediate"
+                        android:text="@string/group_sos_help"
                         android:textColor="#FFCCCC"
                         android:textSize="8sp" />
                 </LinearLayout>
@@ -175,7 +175,7 @@
         android:id="@+id/btnDeleteGroup"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="Supprimer le groupe"
+        android:text="@string/group_delete_title"
         android:textSize="15sp"
         android:textStyle="bold"
         android:textColor="#CC0000"

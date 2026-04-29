@@ -29,7 +29,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Bonjour,"
+                android:text="@string/home_greeting"
                 android:textColor="#999999"
                 android:textSize="11sp" />
 
@@ -37,7 +37,7 @@
                 android:id="@+id/tvHomeUserName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sofia"
+                android:text="@string/home_user_name_placeholder"
                 android:textColor="#111111"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -55,7 +55,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="SJ"
+                android:text="@string/home_user_initials_placeholder"
                 android:textColor="#FFFFFF"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -83,7 +83,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="MES GROUPES"
+            android:text="@string/home_my_groups"
             android:textColor="#AAAAAA"
             android:textSize="10sp"
             android:textStyle="bold"
@@ -136,7 +136,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Ajouter"
+                        android:text="@string/home_add"
                         android:textColor="#AAAAAA"
                         android:textSize="10sp" />
                 </LinearLayout>
@@ -168,7 +168,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="APPUYER EN CAS D'URGENCE"
+            android:text="@string/contact_emergency_prompt"
             android:textColor="#AAAAAA"
             android:textSize="11sp"
             android:textStyle="bold"
@@ -214,7 +214,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="SOS"
+                            android:text="@string/group_sos"
                             android:textColor="#FFFFFF"
                             android:textSize="28sp"
                             android:textStyle="bold"
@@ -223,7 +223,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Aide immediate"
+                            android:text="@string/group_sos_help"
                             android:textColor="#FFCCCC"
                             android:textSize="9sp"
                             android:layout_marginTop="2dp" />
@@ -262,7 +262,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Profil"
+                android:text="@string/nav_profile"
                 android:textColor="#CC0000"
                 android:textSize="10sp"
                 android:textStyle="bold" />
@@ -286,7 +286,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Contacts"
+                android:text="@string/nav_contacts"
                 android:textColor="#AAAAAA"
                 android:textSize="10sp" />
         </LinearLayout>
@@ -325,7 +325,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Alertes"
+                android:text="@string/nav_alerts"
                 android:textColor="#AAAAAA"
                 android:textSize="10sp" />
         </LinearLayout>
@@ -348,7 +348,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Historique"
+                android:text="@string/nav_history"
                 android:textColor="#AAAAAA"
                 android:textSize="10sp" />
         </LinearLayout>
@@ -371,7 +371,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Groupes"
+                android:text="@string/nav_groups"
                 android:textColor="#AAAAAA"
                 android:textSize="10sp" />
         </LinearLayout>

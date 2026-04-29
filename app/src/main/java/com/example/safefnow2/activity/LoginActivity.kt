@@ -100,11 +100,11 @@ class LoginActivity : ComponentActivity() {
             val phone = editPhone.text.toString().trim()
             val password = editPassword.text.toString()
             if (phone.isEmpty()) {
-                Toast.makeText(this, "Entrez votre numero", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.login_toast_enter_phone), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (password.isEmpty()) {
-                Toast.makeText(this, "Entrez votre mot de passe", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.login_toast_enter_password), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             scope.launch {
@@ -132,7 +132,7 @@ class LoginActivity : ComponentActivity() {
                     remoteUser
                 }
                 if (user == null || !PasswordHasher.verify(password, user.password)) {
-                    Toast.makeText(this@LoginActivity, "Numero ou mot de passe incorrect", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@LoginActivity, getString(R.string.login_toast_invalid_credentials), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
                 SessionManager.setCurrentUserId(this@LoginActivity, user.idUser)

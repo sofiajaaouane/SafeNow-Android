@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
@@ -35,7 +36,7 @@
         android:src="@drawable/ic_delete"
         android:contentDescription="@string/btn_remove_disease"
         android:background="@drawable/btn_delete_disease_bg"
-        android:tint="#EF5350"
+        app:tint="#EF5350"
         android:padding="6dp" />
 
 </LinearLayout>

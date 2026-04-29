@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -35,7 +36,7 @@
             android:background="@drawable/circle_white_20"
             android:contentDescription="@string/back"
             android:src="@drawable/ic_arrow_back"
-            android:tint="#D32F2F"
+            app:tint="#D32F2F"
             tools:ignore="TouchTargetSizeCheck" />
 
         <TextView
@@ -43,7 +44,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="36dp"
             android:gravity="center"
-            android:text="My groups"
+            android:text="@string/groups_title"
             android:textColor="#FFFFFF"
             android:textSize="22sp"
             android:textStyle="bold" />
@@ -74,7 +75,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@android:color/transparent"
-            android:hint="Search groups..."
+            android:hint="@string/groups_search_hint"
             android:textSize="15sp"
             android:textColor="#222222"
             android:textColorHint="#BBBBBB"
@@ -103,7 +104,7 @@
         android:layout_width="220dp"
         android:layout_height="54dp"
         android:layout_gravity="center_horizontal"
-        android:text="+ New group"
+        android:text="@string/groups_new_group"
         android:textSize="16sp"
         android:textStyle="bold"
         android:textColor="#FFFFFF"

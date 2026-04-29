@@ -67,13 +67,13 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             if (result.isFailure) {
                 val ex = result.exceptionOrNull()
                 if (ex is OfflineWriteNotAllowed) {
-                    _toast.value = Event("Connectez-vous a Internet")
+                    _toast.value = Event("Please connect to the internet")
                 } else {
-                    _toast.value = Event(ex?.message ?: "Erreur SOS")
+                    _toast.value = Event(ex?.message ?: "SOS error")
                 }
             } else {
                 val count = result.getOrNull() ?: 0
-                _toast.value = if (count <= 0) Event("Aucun groupe SOS activé") else Event("SOS envoyé")
+                _toast.value = if (count <= 0) Event("No SOS-enabled group") else Event("SOS sent")
             }
         }
     }

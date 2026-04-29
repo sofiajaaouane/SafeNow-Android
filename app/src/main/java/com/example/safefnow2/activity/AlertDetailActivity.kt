@@ -99,7 +99,7 @@ class AlertDetailActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 if (recipients.isEmpty()) {
                     val tv = TextView(this@AlertDetailActivity)
-                    tv.text = "Aucun destinataire trouvé"
+                    tv.text = getString(R.string.alert_no_recipient_found)
                     tv.setTextColor(Color.GRAY)
                     container.addView(tv)
                 } else {
@@ -119,12 +119,12 @@ class AlertDetailActivity : AppCompatActivity() {
     private fun displaySenderInfo(user: User?, alert: Alert, location: String?) {
         findViewById<TextView>(R.id.tvDetailSenderName).text = user?.let { "${it.prenom} ${it.nom}".trim() }
             ?: alert.senderName?.takeIf { it.isNotBlank() }
-            ?: "Utilisateur inconnu"
+            ?: getString(R.string.history_unknown_user)
         
         val typeStr = when (alert.targetType) {
-            "GROUP" -> "SOS GROUPE (${alert.targetName})"
-            "GLOBAL" -> "SOS GLOBAL"
-            "RECEIVED" -> "SOS REÇU DE ${alert.targetName}"
+            "GROUP" -> "GROUP SOS (${alert.targetName})"
+            "GLOBAL" -> "GLOBAL SOS"
+            "RECEIVED" -> "SOS RECEIVED FROM ${alert.targetName}"
             else -> alert.typeAlert
         }
         findViewById<TextView>(R.id.tvDetailAlertType).text = typeStr
@@ -133,13 +133,13 @@ class AlertDetailActivity : AppCompatActivity() {
             " (${String.format("%.4f", alert.senderLatitude)}, ${String.format("%.4f", alert.senderLongitude)})"
         } else ""
         val loc = location ?: alert.senderLocation
-        findViewById<TextView>(R.id.tvDetailStartLocation).text = (loc ?: "Inconnue") + coords
+        findViewById<TextView>(R.id.tvDetailStartLocation).text = (loc ?: getString(R.string.alert_unknown_location)) + coords
     }
 
     private fun displayStopperInfo(user: User?, alert: Alert) {
-        findViewById<TextView>(R.id.tvDetailStopperName).text = user?.let { "${it.prenom} ${it.nom}" } ?: "Utilisateur Inconnu"
+        findViewById<TextView>(R.id.tvDetailStopperName).text = user?.let { "${it.prenom} ${it.nom}" } ?: getString(R.string.history_unknown_user)
         findViewById<TextView>(R.id.tvDetailStopTime).text = alert.stoppedAt
-        findViewById<TextView>(R.id.tvDetailStopLocation).text = alert.stoppedLocation ?: "Inconnue"
+        findViewById<TextView>(R.id.tvDetailStopLocation).text = alert.stoppedLocation ?: getString(R.string.alert_unknown_location)
         
         findViewById<TextView>(R.id.labelStoppedBy).visibility = View.VISIBLE
         findViewById<View>(R.id.cardStoppedInfo).visibility = View.VISIBLE

@@ -53,7 +53,7 @@ class NotificationsActivity : AppCompatActivity() {
 
         val uid = SessionManager.getCurrentUserId(this)
         if (uid.isNullOrEmpty()) {
-            Toast.makeText(this, "Session invalide", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.common_invalid_session), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -200,9 +200,9 @@ class NotificationsActivity : AppCompatActivity() {
             val result = runCatching { onlineRepo.acceptFriendRequest(user.idUser, currentUserId) }
             withContext(Dispatchers.Main) {
                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                    Toast.makeText(this@NotificationsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@NotificationsActivity, getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(this@NotificationsActivity, "Ami ajouté", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@NotificationsActivity, getString(R.string.notifications_friend_added), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -213,9 +213,9 @@ class NotificationsActivity : AppCompatActivity() {
             val result = runCatching { onlineRepo.rejectFriendRequest(user.idUser, currentUserId) }
             withContext(Dispatchers.Main) {
                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                    Toast.makeText(this@NotificationsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@NotificationsActivity, getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(this@NotificationsActivity, "Invitation refusée", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@NotificationsActivity, getString(R.string.notifications_invite_refused), Toast.LENGTH_SHORT).show()
                 }
             }
         }

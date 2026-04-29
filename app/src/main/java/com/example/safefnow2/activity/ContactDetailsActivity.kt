@@ -87,11 +87,11 @@ class ContactDetailsActivity : ComponentActivity() {
 
                 val address = if (location != null) {
                     com.example.safefnow2.util.AlertHistoryHelper.getReadableAddress(this@ContactDetailsActivity, location)
-                } else "Position inconnue"
+                } else getString(R.string.unknown_position)
 
                 val isOnline = ConnectivityObserver(this@ContactDetailsActivity).isOnlineFlow().first()
                 if (!isOnline) {
-                    Toast.makeText(this@ContactDetailsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ContactDetailsActivity, getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
 
@@ -115,9 +115,9 @@ class ContactDetailsActivity : ComponentActivity() {
                 }
 
                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                    Toast.makeText(this@ContactDetailsActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ContactDetailsActivity, getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                 } else if (result.isFailure) {
-                    Toast.makeText(this@ContactDetailsActivity, "Erreur SOS", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ContactDetailsActivity, getString(R.string.sos_error), Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this@ContactDetailsActivity, getString(R.string.toast_sos_sent), Toast.LENGTH_SHORT).show()
                 }
@@ -178,19 +178,19 @@ class ContactDetailsActivity : ComponentActivity() {
         tvBloodType.visibility = View.GONE
 
         if (!user.description.isNullOrBlank()) {
-            tvDescription.text = "Description: ${user.description}"
+            tvDescription.text = getString(R.string.contact_description_fmt, user.description)
             tvDescription.visibility = View.VISIBLE
         }
 
         if (!user.bloodType.isNullOrBlank()) {
-            tvBloodType.text = "Blood type: ${user.bloodType}"
+            tvBloodType.text = getString(R.string.contact_blood_type_fmt, user.bloodType)
             tvBloodType.visibility = View.VISIBLE
         }
 
         diseaseContainer.removeAllViews()
         if (diseases.isEmpty()) {
             val emptyTv = TextView(this).apply {
-                text = "Aucune disease"
+                text = getString(R.string.contact_no_disease)
                 setTextColor(0xFF999999.toInt())
                 textSize = 14f
                 setPadding(0, 8, 0, 0)

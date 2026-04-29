@@ -35,7 +35,7 @@ class HistoryViewModel(app: Application) : AndroidViewModel(app) {
             if (!online) return@launch
             val result = repo.syncNow(userId)
             if (result.isFailure) {
-                out.value = UiState.Error("Erreur de chargement")
+                out.value = UiState.Error("Loading error")
             }
         }
 

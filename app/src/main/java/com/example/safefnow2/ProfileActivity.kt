@@ -72,16 +72,16 @@ class ProfileActivity : AppCompatActivity() {
     }
     private fun showLogoutDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Deconnexion")
-            .setMessage("Voulez-vous vous deconnecter ?")
-            .setPositiveButton("Deconnecter") { _, _ ->
+            .setTitle(R.string.logout_dialog_title)
+            .setMessage(getString(R.string.logout_dialog_message))
+            .setPositiveButton(R.string.logout_dialog_confirm) { _, _ ->
                 SessionManager.clear(this)
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 startActivity(intent)
                 finish()
             }
-            .setNegativeButton("Annuler", null)
+            .setNegativeButton(R.string.dialog_delete_cancel, null)
             .setIcon(R.drawable.ic_logout)
             .show()
     }
@@ -93,7 +93,7 @@ class ProfileActivity : AppCompatActivity() {
 
         val userId = SessionManager.getCurrentUserId(this)
         if (userId == null) {
-            Toast.makeText(this, "Utilisateur introuvable", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_user_not_found), Toast.LENGTH_SHORT).show()
             val intent = Intent(this, LoginActivity::class.java)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             startActivity(intent)
@@ -117,7 +117,7 @@ class ProfileActivity : AppCompatActivity() {
 
             withContext(Dispatchers.Main) {
                 if (user == null) {
-                    Toast.makeText(this@ProfileActivity, "Profil introuvable", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ProfileActivity, getString(R.string.toast_profile_not_found), Toast.LENGTH_SHORT).show()
                     finish()
                     return@withContext
                 }
@@ -310,9 +310,9 @@ class ProfileActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 result.onFailure {
                     if (it is OfflineWriteNotAllowed) {
-                        Toast.makeText(this@ProfileActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@ProfileActivity, getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(this@ProfileActivity, "Erreur", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@ProfileActivity, getString(R.string.common_error), Toast.LENGTH_SHORT).show()
                     }
                 }
                 result.onSuccess {
@@ -321,7 +321,7 @@ class ProfileActivity : AppCompatActivity() {
                     binding.etPassword.setText("")
                     isPasswordVisible = false
                     binding.etPassword.transformationMethod = PasswordTransformationMethod.getInstance()
-                    Toast.makeText(this@ProfileActivity, "Profil mis a jour", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ProfileActivity, getString(R.string.toast_save_success), Toast.LENGTH_SHORT).show()
                     lifecycleScope.launch(Dispatchers.IO) {
                         runCatching {
                             sosRepository.syncMyDeviceToCloud(
@@ -342,10 +342,10 @@ class ProfileActivity : AppCompatActivity() {
 
     private fun showDeleteAccountDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Supprimer mon compte")
-            .setMessage("Etes-vous sur de vouloir supprimer votre compte ? Cette action est irreversible.")
-            .setPositiveButton("Supprimer") { _, _ -> deleteAccount() }
-            .setNegativeButton("Annuler", null)
+            .setTitle(R.string.dialog_delete_title)
+            .setMessage(getString(R.string.dialog_delete_message))
+            .setPositiveButton(R.string.dialog_delete_confirm) { _, _ -> deleteAccount() }
+            .setNegativeButton(R.string.dialog_delete_cancel, null)
             .setIcon(R.drawable.ic_delete)
             .show()
     }
@@ -358,10 +358,10 @@ class ProfileActivity : AppCompatActivity() {
 
             withContext(Dispatchers.Main) {
                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                    Toast.makeText(this@ProfileActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ProfileActivity, getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                 } else {
                     SessionManager.clear(this@ProfileActivity)
-                    Toast.makeText(this@ProfileActivity, "Compte supprime", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ProfileActivity, getString(R.string.toast_account_deleted), Toast.LENGTH_SHORT).show()
                     val intent = Intent(this@ProfileActivity, LoginActivity::class.java)
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     startActivity(intent)

@@ -14,14 +14,14 @@ data class HistoryItemUi(
             val isSender = item.alert?.senderId != null && item.alert.senderId == meId
 
             val name =
-                if (isSender) (item.alert?.targetName ?: "Destinataires")
+                if (isSender) (item.alert?.targetName ?: "Recipients")
                 else item.sender?.let { "${it.prenom} ${it.nom}".trim() }
-                    ?: (item.alert?.senderName ?: "Utilisateur inconnu")
+                    ?: (item.alert?.senderName ?: "Unknown user")
 
             val type = when (item.alert?.targetType) {
-                "GROUP" -> if (isSender) "SOS GROUPE (envoyé)" else "SOS GROUPE (reçu)"
-                "GLOBAL" -> if (isSender) "SOS GLOBAL (envoyé)" else "SOS GLOBAL (reçu)"
-                "CONTACT" -> if (isSender) "SOS CONTACT (envoyé)" else "SOS CONTACT (reçu)"
+                "GROUP" -> if (isSender) "GROUP SOS (sent)" else "GROUP SOS (received)"
+                "GLOBAL" -> if (isSender) "GLOBAL SOS (sent)" else "GLOBAL SOS (received)"
+                "CONTACT" -> if (isSender) "CONTACT SOS (sent)" else "CONTACT SOS (received)"
                 else -> item.alert?.typeAlert ?: "SOS"
             }
 
@@ -30,7 +30,7 @@ data class HistoryItemUi(
             } else ""
             val loc = item.declaration.localisation?.trim().orEmpty()
             val locStr = if (loc.isNotEmpty()) " - $loc$coords" else if (coords.isNotEmpty()) " -$coords" else ""
-            val dateText = (item.declaration.createdAt ?: "Date inconnue") + locStr
+            val dateText = (item.declaration.createdAt ?: "Unknown date") + locStr
 
             return HistoryItemUi(
                 alertId = item.declaration.idAlert,

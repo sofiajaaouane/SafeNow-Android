@@ -49,11 +49,11 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
                 runCatching { onlineRepo().deleteFriendEdge(edge, currentUserId) }
             }
             if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                _toast.value = Event("Connectez-vous a Internet")
+                _toast.value = Event("Please connect to the internet")
             } else if (result.isFailure) {
-                _toast.value = Event("Erreur suppression")
+                _toast.value = Event("Delete failed")
             } else {
-                _toast.value = Event("Contact supprimé")
+                _toast.value = Event("Contact deleted")
             }
         }
     }
@@ -91,7 +91,7 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
             val db = DatabaseProvider.get(getApplication())
             val existing = withContext(Dispatchers.IO) { db.amitierDao().getById(currentUserId, targetUserId) }
             if (existing != null) {
-                _toast.value = Event("Demande déjà envoyée")
+                _toast.value = Event("Request already sent")
                 return@launch
             }
             val result = withContext(Dispatchers.IO) {
@@ -103,11 +103,11 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                _toast.value = Event("Connectez-vous a Internet")
+                _toast.value = Event("Please connect to the internet")
             } else if (result.isFailure) {
-                _toast.value = Event("Erreur envoi invitation")
+                _toast.value = Event("Failed to send request")
             } else {
-                _toast.value = Event("Demande envoyée")
+                _toast.value = Event("Request sent")
             }
         }
     }

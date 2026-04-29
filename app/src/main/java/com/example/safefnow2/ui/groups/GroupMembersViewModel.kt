@@ -55,11 +55,11 @@ class GroupMembersViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                _toast.value = Event("Connectez-vous a Internet")
+                _toast.value = Event("Please connect to the internet")
             } else if (result.isFailure) {
-                _toast.value = Event("Erreur ajout membre")
+                _toast.value = Event("Failed to add member")
             } else {
-                _toast.value = Event("${memberIds.size} membre(s) ajouté(s)")
+                _toast.value = Event("${memberIds.size} member(s) added")
             }
         }
     }
@@ -71,11 +71,11 @@ class GroupMembersViewModel(app: Application) : AndroidViewModel(app) {
                 runCatching { onlineRepo().removeMember(groupId, memberId, currentUserId) }
             }
             if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                _toast.value = Event("Connectez-vous a Internet")
+                _toast.value = Event("Please connect to the internet")
             } else if (result.isFailure) {
-                _toast.value = Event("Erreur suppression membre")
+                _toast.value = Event("Failed to remove member")
             } else {
-                _toast.value = Event("${memberName ?: "Membre"} retiré du groupe")
+                _toast.value = Event("${memberName ?: "Member"} removed from the group")
             }
         }
     }
@@ -96,7 +96,7 @@ private fun LiveData<List<User>>.mapToUi(): LiveData<List<MemberUi>> {
     val out = MediatorLiveData<List<MemberUi>>()
     out.addSource(this) { list ->
         out.value = list.mapIndexed { idx, u ->
-            val display = "${u.prenom} ${u.nom}".trim().ifEmpty { "Membre ${idx + 1}" }
+            val display = "${u.prenom} ${u.nom}".trim().ifEmpty { "Member ${idx + 1}" }
             val initials = buildString {
                 u.prenom.trim().firstOrNull()?.uppercaseChar()?.let { append(it) }
                 u.nom.trim().firstOrNull()?.uppercaseChar()?.let { append(it) }

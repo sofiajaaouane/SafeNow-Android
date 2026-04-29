@@ -25,11 +25,11 @@ class SignUpStep3Activity : ComponentActivity() {
             val firstName = etFirstName.text.toString().trim()
             val lastName = etLastName.text.toString().trim()
             if (firstName.isEmpty()) {
-                Toast.makeText(this, "Entrez votre prenom", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.signup_toast_first_name_required), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (lastName.isEmpty()) {
-                Toast.makeText(this, "Entrez votre nom", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.signup_toast_last_name_required), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             val i = intent

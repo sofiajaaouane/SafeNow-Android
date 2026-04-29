@@ -73,15 +73,15 @@ class GroupPopupDialogFragment : DialogFragment() {
 
         popupView.findViewById<TextView>(R.id.btnAddMember).setOnClickListener {
             AlertDialog.Builder(requireContext())
-                .setTitle("Membres")
-                .setItems(arrayOf("Ajouter des membres", "Retirer des membres")) { _, which ->
+                .setTitle(R.string.group_members_title)
+                .setItems(arrayOf(getString(R.string.group_add_members_title), getString(R.string.group_remove_members_title))) { _, which ->
                     if (which == 0) {
                         showAddMembersDialog(groupId, currentUserId)
                     } else {
                         showRemoveMembersDialog(groupId, adminId, currentUserId)
                     }
                 }
-                .setNegativeButton("Annuler", null)
+                .setNegativeButton(R.string.dialog_delete_cancel, null)
                 .show()
         }
 
@@ -98,7 +98,7 @@ class GroupPopupDialogFragment : DialogFragment() {
                     }
                 }
                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                    Toast.makeText(requireContext(), "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -114,11 +114,11 @@ class GroupPopupDialogFragment : DialogFragment() {
         }
         btnSos.setOnClickListener {
             if (sosGlobal != 1) {
-                Toast.makeText(requireContext(), "Groupe désactivé", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.group_deactivated), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (adminId.isNotEmpty() && currentUserId != adminId) {
-                Toast.makeText(requireContext(), "Seul l'admin peut lancer SOS", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.group_admin_only_sos), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             scope.launch {
@@ -136,7 +136,7 @@ class GroupPopupDialogFragment : DialogFragment() {
                 val locationStr = if (location != null) {
                     AlertHistoryHelper.getReadableAddress(requireContext(), location)
                 } else {
-                    "Position inconnue"
+                    getString(R.string.unknown_position)
                 }
 
                 val senderName = withContext(Dispatchers.IO) {
@@ -159,35 +159,35 @@ class GroupPopupDialogFragment : DialogFragment() {
                 }
 
                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                    Toast.makeText(requireContext(), "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                 } else if (result.isFailure && result.exceptionOrNull()?.message == "not_admin") {
-                    Toast.makeText(requireContext(), "Seul l'admin peut lancer SOS", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), getString(R.string.group_admin_only_sos), Toast.LENGTH_SHORT).show()
                 } else if (result.isFailure) {
-                    Toast.makeText(requireContext(), "Erreur SOS", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), getString(R.string.sos_error), Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(requireContext(), "SOS envoyé au groupe", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), getString(R.string.group_sos_sent), Toast.LENGTH_SHORT).show()
                 }
             }
         }
 
         popupView.findViewById<TextView>(R.id.btnDeleteGroup).setOnClickListener {
             AlertDialog.Builder(requireContext())
-                .setTitle("Supprimer le groupe")
-                .setMessage("Voulez-vous vraiment supprimer \"$groupName\" ?")
-                .setPositiveButton("Supprimer") { _, _ ->
+                .setTitle(R.string.group_delete_title)
+                .setMessage(getString(R.string.group_delete_message, groupName))
+                .setPositiveButton(R.string.group_delete_confirm) { _, _ ->
                     scope.launch {
                         val result = withContext(Dispatchers.IO) {
                             runCatching { onlineRepo().deleteGroup(groupId, currentUserId) }
                         }
                         if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                            Toast.makeText(requireContext(), "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                         } else {
                             dialog.dismiss()
-                            Toast.makeText(requireContext(), "Groupe supprimé", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), getString(R.string.group_deleted), Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
-                .setNegativeButton("Annuler", null)
+                .setNegativeButton(R.string.group_delete_cancel, null)
                 .show()
         }
 
@@ -197,21 +197,21 @@ class GroupPopupDialogFragment : DialogFragment() {
     private fun showAddMembersDialog(groupId: String, currentUserId: String) {
         vm.loadAvailableFriends(groupId, currentUserId) { available ->
             if (available.isEmpty()) {
-                Toast.makeText(requireContext(), "Aucun contact disponible à ajouter", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.group_no_contact_to_add), Toast.LENGTH_SHORT).show()
                 return@loadAvailableFriends
             }
             val names = available.map { "${it.prenom} ${it.nom}".trim() }.toTypedArray()
             val checked = BooleanArray(available.size) { false }
             AlertDialog.Builder(requireContext())
-                .setTitle("Ajouter des membres")
+                .setTitle(R.string.group_add_members_title)
                 .setMultiChoiceItems(names, checked) { _, index, isChecked ->
                     checked[index] = isChecked
                 }
-                .setPositiveButton("Ajouter") { _, _ ->
+                .setPositiveButton(R.string.group_add) { _, _ ->
                     val selectedIds = available.filterIndexed { idx, _ -> checked[idx] }.map { it.idUser }
                     vm.addMembers(groupId, currentUserId, selectedIds)
                 }
-                .setNegativeButton("Annuler", null)
+                .setNegativeButton(R.string.dialog_delete_cancel, null)
                 .show()
         }
     }
@@ -219,23 +219,23 @@ class GroupPopupDialogFragment : DialogFragment() {
     private fun showRemoveMembersDialog(groupId: String, adminId: String, currentUserId: String) {
         val removable = latestMembers.filter { it.userId != adminId && it.userId != currentUserId }
         if (removable.isEmpty()) {
-            Toast.makeText(requireContext(), "Aucun membre à retirer", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.group_no_member_to_remove), Toast.LENGTH_SHORT).show()
             return
         }
         val names = removable.map { it.displayName }.toTypedArray()
         val checked = BooleanArray(removable.size) { false }
         AlertDialog.Builder(requireContext())
-            .setTitle("Retirer des membres")
+            .setTitle(R.string.group_remove_members_title)
             .setMultiChoiceItems(names, checked) { _, index, isChecked ->
                 checked[index] = isChecked
             }
-            .setPositiveButton("Retirer") { _, _ ->
+            .setPositiveButton(R.string.group_remove) { _, _ ->
                 val selected = removable.filterIndexed { idx, _ -> checked[idx] }
                 selected.forEach { m ->
                     vm.removeMember(groupId, currentUserId, m.userId, m.displayName)
                 }
             }
-            .setNegativeButton("Annuler", null)
+            .setNegativeButton(R.string.dialog_delete_cancel, null)
             .show()
     }
 
@@ -261,12 +261,12 @@ class GroupPopupDialogFragment : DialogFragment() {
             tv.setBackgroundResource(R.drawable.step_circle_active)
             tv.setOnLongClickListener {
                 AlertDialog.Builder(requireContext())
-                    .setTitle("Retirer le membre")
-                    .setMessage("Voulez-vous retirer ${m.displayName} du groupe ?")
-                    .setPositiveButton("Retirer") { _, _ ->
+                    .setTitle(R.string.group_remove_member_title)
+                    .setMessage(getString(R.string.group_remove_member_message, m.displayName))
+                    .setPositiveButton(R.string.group_remove) { _, _ ->
                         vm.removeMember(groupId, currentUserId, m.userId, m.displayName)
                     }
-                    .setNegativeButton("Annuler", null)
+                    .setNegativeButton(R.string.dialog_delete_cancel, null)
                     .show()
                 true
             }

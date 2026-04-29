@@ -116,7 +116,7 @@ class HomeActivity : AppCompatActivity() {
                     is SosUiEvent.PeerMissing -> getString(R.string.toast_sos_peer_missing)
                     is SosUiEvent.Error -> when (event.message) {
                         "contact_device_unknown" -> getString(R.string.toast_sos_contact_no_device)
-                        else -> event.message.ifEmpty { "Erreur SOS" }
+                        else -> event.message.ifEmpty { getString(R.string.sos_error) }
                     }
                 }
                 Toast.makeText(this@HomeActivity, message, Toast.LENGTH_SHORT).show()
@@ -133,7 +133,7 @@ class HomeActivity : AppCompatActivity() {
                 val locationStr = if (location != null) {
                     getReadableAddress(location)
                 } else {
-                    "Position indisponible (Vérifiez votre GPS)"
+                    getString(R.string.location_unavailable_check_gps)
                 }
 
                 homeVm.sendGlobalSos(
@@ -231,7 +231,7 @@ class HomeActivity : AppCompatActivity() {
                 val geocoder = Geocoder(this@HomeActivity, Locale.getDefault())
                 val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
                 if (!addresses.isNullOrEmpty()) {
-                    addresses[0].getAddressLine(0) ?: "Adresse introuvable"
+                    addresses[0].getAddressLine(0) ?: getString(R.string.address_not_found)
                 } else {
                     "Lat: ${"%.4f".format(location.latitude)}, Lon: ${"%.4f".format(location.longitude)}"
                 }

@@ -82,7 +82,7 @@ class CreateGroupActivity : ComponentActivity() {
                 val currentIds = vm.selectedMembers.value.orEmpty().map { it.idUser }.toSet()
                 val available = friends.filter { it.idUser !in currentIds && it.idUser != userId }
                 if (available.isEmpty()) {
-                    Toast.makeText(this, "Aucun contact disponible à ajouter", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.group_no_contact_to_add), Toast.LENGTH_SHORT).show()
                     return@loadFriends
                 }
                 showPickMembersDialog(available)
@@ -93,7 +93,7 @@ class CreateGroupActivity : ComponentActivity() {
         btnAddItem.setOnClickListener {
             val item = etListItem.text.toString().trim()
             if (item.isEmpty()) {
-                Toast.makeText(this, "Entrez un element avant d'ajouter", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.create_group_toast_enter_item), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             addNecessityRow(item)
@@ -123,7 +123,7 @@ class CreateGroupActivity : ComponentActivity() {
             val description = etGroupDescription.text.toString().trim()
 
             if (title.isEmpty()) {
-                Toast.makeText(this, "Entrez un titre pour le groupe", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.create_group_toast_enter_title), Toast.LENGTH_SHORT).show()
                 etGroupTitle.requestFocus()
                 return@setOnClickListener
             }
@@ -144,7 +144,7 @@ class CreateGroupActivity : ComponentActivity() {
                 }
 
                 if (!userExists) {
-                    Toast.makeText(this@CreateGroupActivity, "Session expirée, veuillez vous reconnecter", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@CreateGroupActivity, getString(R.string.common_session_expired_relogin), Toast.LENGTH_LONG).show()
                     SessionManager.clear(this@CreateGroupActivity)
                     redirectToLogin()
                     return@launch
@@ -176,7 +176,7 @@ class CreateGroupActivity : ComponentActivity() {
                 }
 
                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                    Toast.makeText(this@CreateGroupActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@CreateGroupActivity, getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
 
@@ -191,14 +191,14 @@ class CreateGroupActivity : ComponentActivity() {
                         }
                     }
                     if (addResult.isFailure && addResult.exceptionOrNull() is OfflineWriteNotAllowed) {
-                        Toast.makeText(this@CreateGroupActivity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@CreateGroupActivity, getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                         return@launch
                     }
                 }
 
                 Toast.makeText(
                     this@CreateGroupActivity,
-                    "Groupe \"$title\" cree avec succes",
+                    getString(R.string.group_created_success, title),
                     Toast.LENGTH_SHORT
                 ).show()
 
@@ -218,15 +218,15 @@ class CreateGroupActivity : ComponentActivity() {
         val names = available.map { "${it.prenom} ${it.nom}".trim() }.toTypedArray()
         val checked = BooleanArray(available.size) { false }
         AlertDialog.Builder(this)
-            .setTitle("Ajouter des membres")
+            .setTitle(R.string.group_add_members_title)
             .setMultiChoiceItems(names, checked) { _, index, isChecked ->
                 checked[index] = isChecked
             }
-            .setPositiveButton("Ajouter") { _, _ ->
+            .setPositiveButton(R.string.group_add) { _, _ ->
                 val selected = available.filterIndexed { idx, _ -> checked[idx] }
                 vm.addSelected(selected)
             }
-            .setNegativeButton("Annuler", null)
+            .setNegativeButton(R.string.dialog_delete_cancel, null)
             .show()
     }
 

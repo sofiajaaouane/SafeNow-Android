@@ -3,77 +3,273 @@
     <string name="app_name">SafeNow</string>
 
     <!-- Profile Header -->
-    <string name="back">Retour</string>
-    <string name="user_icon">Icone utilisateur</string>
+    <string name="back">Back</string>
+    <string name="user_icon">User icon</string>
     <string name="default_user_name">Sofia Jaa</string>
-    <string name="user_role">Utilisateur SafeNow</string>
+    <string name="user_role">SafeNow user</string>
 
     <!-- Section titles -->
-    <string name="section_personal_info">Informations personnelles</string>
-    <string name="section_health">Informations de sante</string>
-    <string name="section_security">Securite</string>
+    <string name="section_personal_info">Personal information</string>
+    <string name="section_health">Health information</string>
+    <string name="section_security">Security</string>
 
     <!-- Field labels -->
-    <string name="label_nom">NOM</string>
-    <string name="label_prenom">PRENOM</string>
+    <string name="label_nom">LAST NAME</string>
+    <string name="label_prenom">FIRST NAME</string>
     <string name="label_email">EMAIL</string>
     <string name="label_description">DESCRIPTION</string>
-    <string name="label_blood_type">GROUPE SANGUIN</string>
-    <string name="label_diseases">MALADIES</string>
-    <string name="label_phone">NUMERO DE TELEPHONE</string>
-    <string name="label_password">MOT DE PASSE</string>
+    <string name="label_blood_type">BLOOD TYPE</string>
+    <string name="label_diseases">DISEASES</string>
+    <string name="label_phone">PHONE NUMBER</string>
+    <string name="label_password">PASSWORD</string>
 
     <!-- Hints -->
-    <string name="hint_nom">Votre nom</string>
-    <string name="hint_prenom">Votre prenom</string>
+    <string name="hint_nom">Your last name</string>
+    <string name="hint_prenom">Your first name</string>
     <string name="hint_email">votre@email.com</string>
-    <string name="hint_description">Motifs. Passionne(e) par...</string>
+    <string name="hint_description">Motivation. Passionate about...</string>
     <string name="hint_blood_type">Ex: A+, O-, B+</string>
-    <string name="hint_disease">Nom de la maladie</string>
+    <string name="hint_disease">Disease name</string>
     <string name="hint_phone">0600000000</string>
-    <string name="hint_password">Nouveau mot de passe</string>
+    <string name="hint_password">New password</string>
 
     <!-- Buttons -->
-    <string name="btn_add_disease">Ajouter une maladie</string>
-    <string name="btn_save">ENREGISTRER LES MODIFICATIONS</string>
-    <string name="btn_delete_account">Supprimer mon compte</string>
-    <string name="btn_remove_disease">Supprimer</string>
-    <string name="toggle_password">Afficher/Masquer mot de passe</string>
+    <string name="btn_add_disease">Add a disease</string>
+    <string name="btn_save">SAVE CHANGES</string>
+    <string name="btn_delete_account">Delete my account</string>
+    <string name="btn_remove_disease">Remove</string>
+    <string name="toggle_password">Show/Hide password</string>
 
     <!-- Dialogs -->
-    <string name="dialog_delete_title">Supprimer mon compte</string>
-    <string name="dialog_delete_message">Etes-vous sur de vouloir supprimer votre compte ? Cette action est irreversible.</string>
-    <string name="dialog_delete_confirm">Supprimer</string>
-    <string name="dialog_delete_cancel">Annuler</string>
+    <string name="dialog_delete_title">Delete my account</string>
+    <string name="dialog_delete_message">Are you sure you want to delete your account? This action cannot be undone.</string>
+    <string name="dialog_delete_confirm">Delete</string>
+    <string name="dialog_delete_cancel">Cancel</string>
 
     <!-- Toasts / Messages -->
-    <string name="toast_user_not_found">Utilisateur introuvable</string>
-    <string name="toast_profile_not_found">Profil introuvable</string>
-    <string name="toast_save_success">Profil mis a jour</string>
-    <string name="toast_account_deleted">Compte supprime</string>
-    <string name="error_nom_required">Le nom est obligatoire</string>
-    <string name="error_prenom_required">Le prenom est obligatoire</string>
-    <string name="error_phone_required">Le numero est obligatoire</string>
-    <string name="logout">Deconnexion</string>
+    <string name="toast_user_not_found">User not found</string>
+    <string name="toast_profile_not_found">Profile not found</string>
+    <string name="toast_save_success">Profile updated</string>
+    <string name="toast_account_deleted">Account deleted</string>
+    <string name="error_nom_required">Last name is required</string>
+    <string name="error_prenom_required">First name is required</string>
+    <string name="error_phone_required">Phone number is required</string>
+    <string name="logout">Log out</string>
 
     <!-- SOS Firebase / FCM -->
-    <string name="section_sos_fcm">Alerte SOS (Firebase)</string>
-    <string name="label_my_device_id">Mon ID appareil (partager avec le contact)</string>
-    <string name="label_peer_device_id">ID appareil du contact (SOS)</string>
-    <string name="hint_peer_device_id">Coller l identificateur recu du 2e telephone</string>
-    <string name="btn_save_peer_id">Enregistrer le contact SOS</string>
-    <string name="toast_peer_saved">Contact SOS enregistre</string>
-    <string name="toast_sos_sent">SOS envoye au contact</string>
-    <string name="toast_sos_peer_missing">Choisissez un destinataire SOS (Profil ou contact)</string>
-    <string name="toast_sos_contact_no_device">Ce numero n est pas enregistre sur un autre appareil SafeNow</string>
-    <string name="sos_notification_default_body">Alerte SOS recue</string>
-    <string name="sos_notification_body_from_sender">%1$s declenche une alerte SOS</string>
-    <string name="section_sos_history">Historique SOS</string>
-    <string name="sos_history_empty">Aucun SOS enregistre (ouvrez l app apres connexion pour synchroniser votre numero)</string>
-    <string name="sos_history_role_sent">Envoye vers</string>
-    <string name="sos_history_role_received">Recu de</string>
-    <string name="btn_set_sos_recipient">Definir comme destinataire SOS</string>
-    <string name="toast_sos_recipient_set">Destinataire SOS enregistre</string>
-    <string name="contact_sos_status_linked">Appareil trouve pour ce numero</string>
-    <string name="contact_sos_status_missing">Aucun appareil pour ce numero (l autre telephone doit ouvrir l app)</string>
+    <string name="section_sos_fcm">SOS Alert (Firebase)</string>
+    <string name="label_my_device_id">My device ID (share with your contact)</string>
+    <string name="label_peer_device_id">Contact device ID (SOS)</string>
+    <string name="hint_peer_device_id">Paste the identifier received from the second phone</string>
+    <string name="btn_save_peer_id">Save SOS contact</string>
+    <string name="toast_peer_saved">SOS contact saved</string>
+    <string name="toast_sos_sent">SOS sent to contact</string>
+    <string name="toast_sos_peer_missing">Select an SOS recipient (Profile or Contact)</string>
+    <string name="toast_sos_contact_no_device">This number is not registered on another SafeNow device</string>
+    <string name="sos_notification_default_body">SOS alert received</string>
+    <string name="sos_notification_body_from_sender">%1$s triggered an SOS alert</string>
+    <string name="section_sos_history">SOS history</string>
+    <string name="sos_history_empty">No SOS recorded (open the app after connecting to sync your number)</string>
+    <string name="sos_history_role_sent">Sent to</string>
+    <string name="sos_history_role_received">Received from</string>
+    <string name="btn_set_sos_recipient">Set as SOS recipient</string>
+    <string name="toast_sos_recipient_set">SOS recipient saved</string>
+    <string name="contact_sos_status_linked">Device found for this number</string>
+    <string name="contact_sos_status_missing">No device for this number (the other phone must open the app)</string>
+
+    <!-- Common -->
+    <string name="common_error">Error</string>
+    <string name="common_offline">Please connect to the internet</string>
+    <string name="common_missing_data">Missing data</string>
+    <string name="common_invalid_session">Invalid session</string>
+    <string name="common_session_expired_relogin">Session expired, please sign in again</string>
+    <string name="common_or">  OR  </string>
+
+    <!-- Login -->
+    <string name="login_title">Sign in</string>
+    <string name="login_subtitle">Access your secure space</string>
+    <string name="login_account_number">ACCOUNT NUMBER</string>
+    <string name="login_password">PASSWORD</string>
+    <string name="login_btn_sign_in">SIGN IN</string>
+    <string name="login_create_account">Create an account</string>
+    <string name="login_forgot_password">Forgot password?</string>
+    <string name="login_hint_phone">Enter your phone number</string>
+    <string name="login_hint_password">Enter your password</string>
+    <string name="login_toast_enter_phone">Enter your phone number</string>
+    <string name="login_toast_enter_password">Enter your password</string>
+    <string name="login_toast_invalid_credentials">Phone number or password is incorrect</string>
+    <string name="login_footer">2026 SafeNow - Secured and certified</string>
+
+    <!-- Permissions -->
+    <string name="permissions_title">Required permissions</string>
+    <string name="permissions_subtitle">Enable permissions so SafeNow can protect you effectively</string>
+    <string name="permissions_essential">ESSENTIAL</string>
+    <string name="permissions_location_title">Precise location (GPS)</string>
+    <string name="permissions_location_desc">Send your exact location to emergency services</string>
+    <string name="permissions_notifications_title">Notification sounds/vibration</string>
+    <string name="permissions_notifications_desc">Runtime (Dialog)</string>
+    <string name="permissions_phone_title">Phone (calls)</string>
+    <string name="permissions_phone_desc">Direct call to 15, 17, 18 or 112</string>
+    <string name="permissions_continue">CONTINUE</string>
+    <string name="permissions_toast_enable_all">Enable all 3 permissions</string>
+    <string name="permissions_phone_already_used">This phone number is already used</string>
+    <string name="permissions_email_already_used">This email is already used</string>
+
+    <!-- Signup -->
+    <string name="signup_title">Sign up</string>
+    <string name="signup_phone_number">PHONE NUMBER</string>
+    <string name="signup_login">LOGIN</string>
+    <string name="signup_next">NEXT  →</string>
+    <string name="signup_prev">←  PREV</string>
+    <string name="signup_finish">FINISH  ✓</string>
+    <string name="signup_email_address">EMAIL ADDRESS</string>
+    <string name="signup_password_label">PASSWORD</string>
+    <string name="signup_first_name">FIRST NAME</string>
+    <string name="signup_last_name">LAST NAME</string>
+    <string name="signup_first_name_hint">John</string>
+    <string name="signup_last_name_hint">Doe</string>
+    <string name="signup_hint_digits_9">9 digits</string>
+    <string name="signup_toast_select_country_digits">Select the country then enter exactly 9 digits</string>
+    <string name="signup_toast_first_name_required">Enter your first name</string>
+    <string name="signup_toast_last_name_required">Enter your last name</string>
+    <string name="signup_toast_enter_password">Enter a password</string>
+    <string name="signup_toast_password_min_len">Password must be at least 7 characters</string>
+    <string name="signup_email_already_used">This email is already used</string>
+    <string name="signup_phone_already_used">This phone number is already used</string>
+
+    <!-- Groups -->
+    <string name="groups_title">My groups</string>
+    <string name="groups_search_hint">Search groups...</string>
+    <string name="groups_new_group">+ New group</string>
+    <string name="group_delete_title">Delete group</string>
+    <string name="group_delete_message">Do you really want to delete \"%1$s\"?</string>
+    <string name="group_delete_confirm">Delete</string>
+    <string name="group_delete_cancel">Cancel</string>
+    <string name="group_members_title">Members</string>
+    <string name="group_add_members_title">Add members</string>
+    <string name="group_add">Add</string>
+    <string name="group_remove_members_title">Remove members</string>
+    <string name="group_remove">Remove</string>
+    <string name="group_remove_member_title">Remove member</string>
+    <string name="group_remove_member_message">Do you want to remove %1$s from the group?</string>
+    <string name="group_long_press_help">Long press to remove a member (or via +)</string>
+    <string name="group_loading">Loading data...</string>
+    <string name="group_sos_help">Immediate help</string>
+    <string name="group_sos">SOS</string>
+    <string name="group_deleted">Group deleted</string>
+    <string name="group_deactivated">Group deactivated</string>
+    <string name="group_activated">Group activated</string>
+    <string name="group_admin_only_sos">Only the admin can start SOS</string>
+    <string name="group_sos_sent">SOS sent to the group</string>
+    <string name="group_no_contact_to_add">No contact available to add</string>
+    <string name="group_no_member_to_remove">No member to remove</string>
+    <string name="group_member_removed">%1$s removed from the group</string>
+    <string name="group_member_default">Member</string>
+    <string name="group_members_added">%1$d member(s) added</string>
+    <string name="group_avatar_placeholder">G</string>
+    <string name="group_label">Group</string>
+
+    <!-- Create group -->
+    <string name="create_group_title">Group</string>
+    <string name="create_group_name">Group name</string>
+    <string name="create_group_description">DESCRIPTION</string>
+    <string name="create_group_description_hint">Add a description...</string>
+    <string name="create_group_essential_items">Essential items</string>
+    <string name="create_group_item_hint">Write an item then press + or Enter</string>
+    <string name="create_group_members">Members</string>
+    <string name="create_group_create">Create group</string>
+    <string name="create_group_toast_enter_item">Enter an item before adding</string>
+    <string name="create_group_toast_enter_title">Enter a group title</string>
+    <string name="group_created_success">Group \"%1$s\" created successfully</string>
+
+    <!-- Logout dialog -->
+    <string name="logout_dialog_title">Log out</string>
+    <string name="logout_dialog_message">Do you want to log out?</string>
+    <string name="logout_dialog_confirm">Log out</string>
+
+    <!-- Contacts -->
+    <string name="contacts_title">Contacts</string>
+    <string name="contacts_empty">No contacts</string>
+    <string name="contacts_search_hint">Search by first or last name</string>
+    <string name="contact_title">Contact</string>
+    <string name="contact_name_placeholder">First Last</string>
+    <string name="contact_email_placeholder">Email</string>
+    <string name="contact_phone_placeholder">Phone</string>
+    <string name="contact_info">Info</string>
+    <string name="contact_emergency_prompt">TAP IN CASE OF EMERGENCY</string>
+    <string name="contact_no_disease">No disease</string>
+    <string name="contact_delete_title">Delete contact</string>
+    <string name="contact_delete_message">Delete %1$s?</string>
+    <string name="contact_delete_confirm">Delete</string>
+    <string name="contact_delete_cancel">Cancel</string>
+
+    <!-- Home / navigation -->
+    <string name="home_greeting">Hello,</string>
+    <string name="home_user_name_placeholder">User</string>
+    <string name="home_user_initials_placeholder">U</string>
+    <string name="home_my_groups">MY GROUPS</string>
+    <string name="home_add">Add</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_contacts">Contacts</string>
+    <string name="nav_alerts">Alerts</string>
+    <string name="nav_history">History</string>
+    <string name="nav_groups">Groups</string>
+
+    <!-- History -->
+    <string name="history_title">SOS history</string>
+    <string name="history_empty">No SOS in history</string>
+    <string name="history_load_error">Loading error</string>
+    <string name="history_unknown_user">Unknown user</string>
+    <string name="history_sos_alert">SOS alert</string>
+    <string name="history_just_now">A moment ago</string>
+
+    <!-- Notifications -->
+    <string name="notifications_title">Alerts</string>
+    <string name="notifications_friend_requests">Friend requests</string>
+    <string name="notifications_none_pending">No pending invitations</string>
+    <string name="notifications_sent_title">Sent invitations</string>
+    <string name="notifications_none_sent">No sent invitations</string>
+    <string name="notifications_friend_added">Friend added</string>
+    <string name="notifications_invite_refused">Invitation declined</string>
+
+    <!-- Friend request -->
+    <string name="friend_request_reject">Reject</string>
+    <string name="friend_request_accept">Accept</string>
+
+    <!-- Add contact dialog -->
+    <string name="add_contact_title">Add contact</string>
+    <string name="add_contact_search">SEARCH</string>
+    <string name="add_contact_name">Name</string>
+    <string name="add_contact_phone">Phone</string>
+    <string name="add_contact_send_request">SEND REQUEST</string>
+    <string name="add_contact_not_found">No user with this phone number</string>
+    <string name="add_contact_search_first">Search for a user first</string>
+
+    <!-- Alert detail -->
+    <string name="alert_details_title">Alert details</string>
+    <string name="alert_reported_by">REPORTED BY</string>
+    <string name="alert_user_name">User name</string>
+    <string name="alert_type">Alert type</string>
+    <string name="alert_date_time">Date and time</string>
+    <string name="alert_unknown_date">Unknown date</string>
+    <string name="alert_sos_place">SOS location</string>
+    <string name="alert_unknown_location">Unknown location</string>
+    <string name="alert_recipients">RECIPIENTS</string>
+    <string name="alert_stopped_by">STOPPED BY</string>
+    <string name="alert_not_stopped_yet">Not stopped yet</string>
+    <string name="alert_stop_time">Stop time</string>
+    <string name="alert_stop_place">Stop location</string>
+    <string name="alert_no_recipient_found">No recipient found</string>
+
+    <!-- SOS incoming -->
+    <string name="sos_from">From:</string>
+    <string name="sos_stop">STOP</string>
+
+    <!-- Address fallback -->
+    <string name="address_not_found">Address not found</string>
+    <string name="unknown_position">Unknown position</string>
+    <string name="location_unavailable_check_gps">Location unavailable (check your GPS)</string>
+    <string name="sos_error">SOS error</string>
+    <string name="contact_description_fmt">Description: %1$s</string>
+    <string name="contact_blood_type_fmt">Blood type: %1$s</string>
 </resources>

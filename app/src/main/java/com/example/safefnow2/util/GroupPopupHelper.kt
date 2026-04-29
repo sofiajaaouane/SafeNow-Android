@@ -77,11 +77,11 @@ object GroupPopupHelper {
                     runCatching { onlineRepo(activity).setGroupActive(group, isChecked, userId) }
                 }
                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                    Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(activity, activity.getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(
                         activity,
-                        if (isChecked) "Groupe activé" else "Groupe désactivé",
+                        if (isChecked) activity.getString(R.string.group_activated) else activity.getString(R.string.group_deactivated),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -98,7 +98,7 @@ object GroupPopupHelper {
         }
         btnSos.setOnClickListener {
             if (group.sosGlobal != 1) {
-                Toast.makeText(activity, "Groupe désactivé", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, activity.getString(R.string.group_deactivated), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             scope.launch {
@@ -112,7 +112,7 @@ object GroupPopupHelper {
                 // On transforme les coordonnées en adresse réelle
                 val locationStr = if (location != null) {
                     getReadableAddress(activity, location)
-                } else "Position inconnue"
+                } else activity.getString(R.string.unknown_position)
 
                 val senderName = withContext(Dispatchers.IO) {
                     val me = DatabaseProvider.get(activity).userDao().getById(userId)
@@ -132,34 +132,34 @@ object GroupPopupHelper {
                     }
                 }
                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                    Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(activity, activity.getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                 } else if (result.isFailure && result.exceptionOrNull()?.message == "not_admin") {
-                    Toast.makeText(activity, "Seul l'admin peut lancer SOS", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(activity, activity.getString(R.string.group_admin_only_sos), Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(activity, "SOS envoyé au groupe", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(activity, activity.getString(R.string.group_sos_sent), Toast.LENGTH_SHORT).show()
                 }
             }
         }
 
         popupView.findViewById<TextView>(R.id.btnDeleteGroup).setOnClickListener {
             AlertDialog.Builder(activity)
-                .setTitle("Supprimer le groupe")
-                .setMessage("Voulez-vous vraiment supprimer \"${group.name}\" ?")
-                .setPositiveButton("Supprimer") { _, _ ->
+                .setTitle(R.string.group_delete_title)
+                .setMessage(activity.getString(R.string.group_delete_message, group.name))
+                .setPositiveButton(R.string.group_delete_confirm) { _, _ ->
                     scope.launch {
                         val result = withContext(Dispatchers.IO) {
                             runCatching { onlineRepo(activity).deleteGroup(group.idGroup, userId) }
                         }
                         if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                            Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(activity, activity.getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                         } else {
                             dialog.dismiss()
                             onGroupDeleted()
-                            Toast.makeText(activity, "Groupe supprimé", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(activity, activity.getString(R.string.group_deleted), Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
-                .setNegativeButton("Annuler", null)
+                .setNegativeButton(R.string.group_delete_cancel, null)
                 .show()
         }
 
@@ -172,7 +172,7 @@ object GroupPopupHelper {
                 val geocoder = Geocoder(context, Locale.getDefault())
                 val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
                 if (!addresses.isNullOrEmpty()) {
-                    addresses[0].getAddressLine(0) ?: "Adresse introuvable"
+                    addresses[0].getAddressLine(0) ?: context.getString(R.string.address_not_found)
                 } else {
                     "Lat: ${"%.4f".format(location.latitude)}, Lon: ${"%.4f".format(location.longitude)}"
                 }
@@ -234,9 +234,9 @@ object GroupPopupHelper {
                 val memberName = item.displayName ?: "ce membre"
                 tvMember.setOnLongClickListener {
                     AlertDialog.Builder(activity)
-                        .setTitle("Retirer le membre")
-                        .setMessage("Voulez-vous retirer $memberName du groupe ?")
-                        .setPositiveButton("Retirer") { _, _ ->
+                        .setTitle(R.string.group_remove_member_title)
+                        .setMessage(activity.getString(R.string.group_remove_member_message, memberName))
+                        .setPositiveButton(R.string.group_remove) { _, _ ->
                             scope.launch {
                                 val result = withContext(Dispatchers.IO) {
                                     runCatching {
@@ -244,15 +244,15 @@ object GroupPopupHelper {
                                     }
                                 }
                                 if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                                    Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(activity, activity.getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                                 } else {
                                     loadMembers(activity, scope, groupId, currentUserId, avatarsContainer)
-                                    Toast.makeText(activity, "$memberName retiré du groupe", Toast.LENGTH_SHORT)
+                                    Toast.makeText(activity, activity.getString(R.string.group_member_removed, memberName), Toast.LENGTH_SHORT)
                                         .show()
                                 }
                             }
                         }
-                        .setNegativeButton("Annuler", null)
+                        .setNegativeButton(R.string.dialog_delete_cancel, null)
                         .show()
                     true
                 }
@@ -302,7 +302,7 @@ object GroupPopupHelper {
             if (availableFriends.isEmpty()) {
                 Toast.makeText(
                     activity,
-                    "Aucun contact disponible à ajouter",
+                    activity.getString(R.string.group_no_contact_to_add),
                     Toast.LENGTH_SHORT
                 ).show()
                 return@launch
@@ -312,11 +312,11 @@ object GroupPopupHelper {
             val checked = BooleanArray(availableFriends.size) { false }
 
             AlertDialog.Builder(activity)
-                .setTitle("Ajouter des membres")
+                .setTitle(R.string.group_add_members_title)
                 .setMultiChoiceItems(names, checked) { _, index, isChecked ->
                     checked[index] = isChecked
                 }
-                .setPositiveButton("Ajouter") { _, _ ->
+                .setPositiveButton(R.string.group_add) { _, _ ->
                     scope.launch {
                         val selected = availableFriends.filterIndexed { i, _ -> checked[i] }
                         if (selected.isEmpty()) return@launch
@@ -330,18 +330,18 @@ object GroupPopupHelper {
                             }
                         }
                         if (result.isFailure && result.exceptionOrNull() is OfflineWriteNotAllowed) {
-                            Toast.makeText(activity, "Connectez-vous a Internet", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(activity, activity.getString(R.string.common_offline), Toast.LENGTH_SHORT).show()
                         } else {
                             loadMembers(activity, scope, groupId, userId, avatarsContainer)
                             Toast.makeText(
                                 activity,
-                                "${selected.size} membre(s) ajouté(s)",
+                                activity.getString(R.string.group_members_added, selected.size),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
                     }
                 }
-                .setNegativeButton("Annuler", null)
+                .setNegativeButton(R.string.dialog_delete_cancel, null)
                 .show()
         }
     }

@@ -39,7 +39,7 @@
                 android:id="@+id/tvHistoryUserName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Utilisateur inconnu"
+                android:text="@string/history_unknown_user"
                 android:textColor="#111111"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -48,7 +48,7 @@
                 android:id="@+id/tvHistoryType"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Alerte SOS"
+                android:text="@string/history_sos_alert"
                 android:textColor="#D32F2F"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -57,7 +57,7 @@
                 android:id="@+id/tvHistoryDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Il y a quelques instants"
+                android:text="@string/history_just_now"
                 android:textColor="#999999"
                 android:textSize="11sp"
                 android:layout_marginTop="2dp" />

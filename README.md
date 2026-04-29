@@ -1,83 +1,83 @@
 # SafeNow-Android
 
-SafeNow-Android est une application mobile Android inspirée de SafeNow, pensée pour la **sécurité personnelle** et l’**assistance rapide**.
+SafeNow-Android is an Android mobile app inspired by SafeNow, focused on **personal safety** and **fast assistance**.
 
-## Aperçu
+## Overview
 
-- **Objectif**: application orientée “safety” (profil, contacts, groupes, SOS, historique, notifications)
-- **Architecture**: **MVVM** avec **LiveData** (les ViewModels exposent des LiveData aux Activities/Fragments)
-- **Données**: **Firebase Realtime Database (RTDB)** comme source de vérité + **Room (SQLite)** comme cache local
-- **Temps réel**: un service (ex: `AlwaysListenService`) écoute RTDB et rafraîchit le cache automatiquement
+- **Goal**: a “safety” app (profile, contacts, groups, SOS, history, notifications)
+- **Architecture**: **MVVM** with **LiveData** (ViewModels expose LiveData to Activities/Fragments)
+- **Data**: **Firebase Realtime Database (RTDB)** as the source of truth + **Room (SQLite)** as a local cache
+- **Realtime**: a service (e.g. `AlwaysListenService`) listens to RTDB and refreshes the cache automatically
 
-## Technologies
+## Tech stack
 
-- **Langage**: Kotlin
-- **Plateforme**: Android
+- **Language**: Kotlin
+- **Platform**: Android
 - **Build**: Gradle
-- **UI**: XML layouts (ex: `app/src/main/res/layout/`)
-- **Données**: Firebase RTDB + Room (SQLite)
+- **UI**: XML layouts (e.g. `app/src/main/res/layout/`)
+- **Data**: Firebase RTDB + Room (SQLite)
 
-## Prérequis
+## Requirements
 
-- **Android Studio** (version récente recommandée)
-- **Android SDK** installé via Android Studio
-- **JDK** compatible avec Android Studio/Gradle (en général, le JDK embarqué d’Android Studio suffit)
+- **Android Studio** (recent version recommended)
+- **Android SDK** installed via Android Studio
+- **JDK** compatible with Android Studio/Gradle (Android Studio’s embedded JDK is usually enough)
 
-## Installation / Setup
+## Setup
 
-1. **Cloner le projet**
+1. **Clone the project**
 
 ```bash
 git clone <votre-repo>
 cd SafeNow-Android
 ```
 
-2. **Ouvrir dans Android Studio**
+2. **Open in Android Studio**
 
-- Android Studio → **Open** → sélectionner le dossier `SafeNow-Android`
+- Android Studio → **Open** → select the `SafeNow-Android` folder
 
-3. **Synchroniser Gradle**
+3. **Sync Gradle**
 
-- Au premier lancement, Android Studio propose “**Gradle Sync**”
-- Attendre la fin de l’indexation et de la synchronisation
+- On first launch, Android Studio will suggest a **Gradle Sync**
+- Wait for indexing and sync to complete
 
-4. **Lancer l’application**
+4. **Run the app**
 
-- Brancher un téléphone (débogage USB activé) **ou** créer un émulateur (AVD)
-- Cliquer **Run** (▶) et choisir l’appareil
+- Connect a phone (USB debugging enabled) **or** create an emulator (AVD)
+- Click **Run** (▶) and choose the device
 
-## Connexion à Firebase
+## Firebase setup
 
-Le projet utilise **Realtime Database** (et peut utiliser FCM). Il manque surtout le fichier `google-services.json` (il est ignoré par git).
+This project uses **Realtime Database** (and may use FCM). The main missing file is `google-services.json` (it is ignored by git).
 
-1. **Créer/ouvrir un projet Firebase**
+1. **Create/open a Firebase project**
 
-- Firebase Console → créer (ou choisir) un projet
+- Firebase Console → create (or select) a project
 
-2. **Ajouter une application Android dans Firebase**
+2. **Add an Android app in Firebase**
 
 - “Add app” → Android
-- **Android package name**: `com.example.safefnow2` (doit correspondre à `applicationId` dans `app/build.gradle.kts`)
-- (Recommandé) Ajouter vos **SHA-1 / SHA-256** si vous utilisez des services qui les demandent (ex: FCM, Auth, etc.)
+- **Android package name**: `com.example.safefnow2` (must match `applicationId` in `app/build.gradle.kts`)
+- (Recommended) Add **SHA-1 / SHA-256** if you use services that require them (e.g. FCM, Auth, etc.)
 
-3. **Télécharger `google-services.json`**
+3. **Download `google-services.json`**
 
-- Télécharger le fichier depuis Firebase Console
-- Le placer ici: `app/google-services.json`
+- Download the file from Firebase Console
+- Place it here: `app/google-services.json`
 
-4. **Synchroniser Gradle**
+4. **Sync Gradle**
 
 - Android Studio → “Sync Now”
-- Note: le plugin `com.google.gms.google-services` est appliqué automatiquement **uniquement** si `app/google-services.json` est présent.
+- Note: the `com.google.gms.google-services` plugin is applied automatically **only** if `app/google-services.json` exists.
 
-5. **Activer les produits Firebase utilisés (si besoin)**
+5. **Enable Firebase products (if needed)**
 
-- **Realtime Database**: activer la base et définir les règles
-- **FCM**: activer Cloud Messaging (la réception des notifications dépend aussi de la config Android/serveur)
+- **Realtime Database**: enable the database and configure rules
+- **FCM**: enable Cloud Messaging (notification delivery also depends on Android/server configuration)
 
-## Notes sur la structure des données (RTDB)
+## RTDB data structure notes
 
-Chemins principaux (indicatifs):
+Main paths (indicative):
 
 - `users/<userId>`
 - `emergencyGroups/<groupId>`
@@ -86,19 +86,19 @@ Chemins principaux (indicatifs):
 - `alerts/<alertId>`
 - `declarationAlerts/<userId>/<alertId>`
 
-## Commandes utiles (optionnel)
+## Useful commands (optional)
 
-Depuis la racine du projet:
+From the project root:
 
 ```bash
-gradlew assembleDebug
+./gradlew.bat :app:assembleDebug
 ```
 
 ```bash
-gradlew test
+./gradlew.bat :app:lintDebug
 ```
 
-## Structure rapide
+## Quick structure
 
 - `app/` : module principal Android
 - `app/src/main/java/` : code Kotlin
@@ -106,4 +106,5 @@ gradlew test
 
 ## Notes
 
-- **Ne pas versionner**: `.gradle/`, `app/build/`, fichiers générés, `google-services.json` (contient des infos de projet)
+- **Do not commit**: `.gradle/`, `app/build/`, generated files, `google-services.json` (contains project information)
+- **UI text**: user-visible text should be stored in `app/src/main/res/values/strings.xml` and referenced via `@string/...` in layouts (and via `R.string...` in UI messages).

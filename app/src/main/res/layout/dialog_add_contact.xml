@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ajouter un contact"
+        android:text="@string/add_contact_title"
         android:textColor="#111111"
         android:textSize="18sp"
         android:textStyle="bold"
@@ -53,7 +53,7 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
-                android:hint="9 chiffres"
+                android:hint="@string/signup_hint_digits_9"
                 android:inputType="number"
                 android:maxLength="9"
                 android:textSize="15sp"
@@ -74,7 +74,7 @@
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
-            android:text="SEARCH"
+            android:text="@string/add_contact_search"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="#CC0000"
@@ -97,7 +97,7 @@
             android:textColor="#111111"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:text="Nom" />
+            android:text="@string/add_contact_name" />
 
         <TextView
             android:id="@+id/tvResultPhone"
@@ -106,14 +106,14 @@
             android:textColor="#999999"
             android:textSize="13sp"
             android:layout_marginTop="4dp"
-            android:text="Téléphone" />
+            android:text="@string/add_contact_phone" />
 
         <TextView
             android:id="@+id/btnSendAmitier"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_marginTop="18dp"
-            android:text="ENVOYER DEMANDE"
+            android:text="@string/add_contact_send_request"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="#FFFFFF"
@@ -126,7 +126,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="14dp"
-        android:text="Aucun utilisateur avec ce numero"
+        android:text="@string/add_contact_not_found"
         android:textColor="#999999"
         android:textSize="14sp"
         android:gravity="center"

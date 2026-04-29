@@ -125,10 +125,10 @@ class ContactsActivity : ComponentActivity() {
 
     private fun showDeleteConfirm(item: ContactUiItem) {
         AlertDialog.Builder(this)
-                .setTitle("Supprimer le contact")
-                .setMessage("Supprimer ${item.fullName} ?")
-                .setPositiveButton("Supprimer") { _, _ -> deleteAmitier(item) }
-                .setNegativeButton("Annuler", null)
+                .setTitle(R.string.contact_delete_title)
+                .setMessage(getString(R.string.contact_delete_message, item.fullName))
+                .setPositiveButton(R.string.contact_delete_confirm) { _, _ -> deleteAmitier(item) }
+                .setNegativeButton(R.string.contact_delete_cancel, null)
                 .show()
     }
 
@@ -171,14 +171,14 @@ class ContactsActivity : ComponentActivity() {
         tvNoUser.visibility = View.GONE
 
         val dialog =
-                AlertDialog.Builder(this).setView(view).setNegativeButton("Annuler", null).create()
+                AlertDialog.Builder(this).setView(view).setNegativeButton(R.string.dialog_delete_cancel, null).create()
 
         btnSearch.setOnClickListener {
             val localNumber = etPhoneNumber.text.toString().trim()
             if (spinner.selectedItemPosition < 0) {
                 Toast.makeText(
                                 this,
-                                "Selectionnez le pays puis entrez exactement 9 chiffres",
+                                getString(R.string.signup_toast_select_country_digits),
                                 Toast.LENGTH_SHORT
                         )
                         .show()
@@ -187,7 +187,7 @@ class ContactsActivity : ComponentActivity() {
             if (localNumber.length != 9 || !localNumber.all { it.isDigit() }) {
                 Toast.makeText(
                                 this,
-                                "Selectionnez le pays puis entrez exactement 9 chiffres",
+                                getString(R.string.signup_toast_select_country_digits),
                                 Toast.LENGTH_SHORT
                         )
                         .show()
@@ -217,7 +217,7 @@ class ContactsActivity : ComponentActivity() {
                             ?: run {
                                 Toast.makeText(
                                                 this,
-                                                "Cherchez un utilisateur d'abord",
+                                                getString(R.string.add_contact_search_first),
                                                 Toast.LENGTH_SHORT
                                         )
                                         .show()
@@ -227,7 +227,7 @@ class ContactsActivity : ComponentActivity() {
             val currentUserId =
                     SessionManager.getCurrentUserId(this)
                             ?: run {
-                                Toast.makeText(this, "Session invalide", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this, getString(R.string.common_invalid_session), Toast.LENGTH_SHORT).show()
                                 return@setOnClickListener
                             }
 

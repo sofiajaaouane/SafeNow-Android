@@ -3,6 +3,7 @@ package com.example.safefnow2.util
 import android.content.Context
 import android.location.Geocoder
 import android.location.Location
+import com.example.safefnow2.R
 import com.example.safefnow2.data.local.DatabaseProvider
 import com.example.safefnow2.data.local.entity.Alert
 import com.example.safefnow2.data.local.entity.DeclarationAlert
@@ -55,7 +56,7 @@ object AlertHistoryHelper {
                 val geocoder = Geocoder(context, Locale.getDefault())
                 val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
                 if (!addresses.isNullOrEmpty()) {
-                    addresses[0].getAddressLine(0) ?: "Adresse introuvable"
+                    addresses[0].getAddressLine(0) ?: context.getString(R.string.address_not_found)
                 } else {
                     "Lat: ${"%.4f".format(location.latitude)}, Lon: ${"%.4f".format(location.longitude)}"
                 }

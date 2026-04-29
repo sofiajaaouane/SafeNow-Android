@@ -28,7 +28,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Alertes"
+            android:text="@string/notifications_title"
             android:textColor="#111111"
             android:textSize="18sp"
             android:textStyle="bold"/>
@@ -74,7 +74,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Invitations d'amis"
+                android:text="@string/notifications_friend_requests"
                 android:textColor="#111111"
                 android:textSize="15sp"
                 android:textStyle="bold"
@@ -93,7 +93,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Aucune invitation en attente"
+                    android:text="@string/notifications_none_pending"
                     android:textColor="#AAAAAA"
                     android:textSize="14sp"/>
             </LinearLayout>
@@ -108,7 +108,7 @@
                 android:id="@+id/tvSentTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Invitations envoyées"
+                android:text="@string/notifications_sent_title"
                 android:textColor="#111111"
                 android:textSize="15sp"
                 android:textStyle="bold"
@@ -119,7 +119,7 @@
                 android:id="@+id/tvSentEmpty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Aucune invitation envoyée"
+                android:text="@string/notifications_none_sent"
                 android:textColor="#999999"
                 android:textSize="13sp"
                 android:visibility="gone" />
