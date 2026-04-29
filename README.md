@@ -4,9 +4,10 @@ SafeNow-Android est une application mobile Android inspirée de SafeNow, pensée
 
 ## Aperçu
 
-- **Objectif**: fournir une base d’application orientée “safety” (profil, écrans de gestion, données locales, etc.)
-- **Architecture**: MVVM (Model–View–ViewModel) autant que possible
-- **Stockage local**: SQLite (via les composants Android usuels)
+- **Objectif**: application orientée “safety” (profil, contacts, groupes, SOS, historique, notifications)
+- **Architecture**: **MVVM** avec **LiveData** (les ViewModels exposent des LiveData aux Activities/Fragments)
+- **Données**: **Firebase Realtime Database (RTDB)** comme source de vérité + **Room (SQLite)** comme cache local
+- **Temps réel**: un service (ex: `AlwaysListenService`) écoute RTDB et rafraîchit le cache automatiquement
 
 ## Technologies
 
@@ -14,7 +15,7 @@ SafeNow-Android est une application mobile Android inspirée de SafeNow, pensée
 - **Plateforme**: Android
 - **Build**: Gradle
 - **UI**: XML layouts (ex: `app/src/main/res/layout/`)
-- **Données**: SQLite (local)
+- **Données**: Firebase RTDB + Room (SQLite)
 
 ## Prérequis
 
@@ -47,7 +48,7 @@ cd SafeNow-Android
 
 ## Connexion à Firebase
 
-Le projet est déjà prêt côté dépendances (Firestore, Realtime Database, FCM). Il manque surtout le fichier `google-services.json` (il est ignoré par git).
+Le projet utilise **Realtime Database** (et peut utiliser FCM). Il manque surtout le fichier `google-services.json` (il est ignoré par git).
 
 1. **Créer/ouvrir un projet Firebase**
 
@@ -71,9 +72,19 @@ Le projet est déjà prêt côté dépendances (Firestore, Realtime Database, FC
 
 5. **Activer les produits Firebase utilisés (si besoin)**
 
-- **Firestore**: activer Cloud Firestore et définir les règles
 - **Realtime Database**: activer la base et définir les règles
 - **FCM**: activer Cloud Messaging (la réception des notifications dépend aussi de la config Android/serveur)
+
+## Notes sur la structure des données (RTDB)
+
+Chemins principaux (indicatifs):
+
+- `users/<userId>`
+- `emergencyGroups/<groupId>`
+- `groupMembers/<groupId>/<userId> = true`
+- `groupMembersByUser/<userId>/<groupId> = true`
+- `alerts/<alertId>`
+- `declarationAlerts/<userId>/<alertId>`
 
 ## Commandes utiles (optionnel)
 
@@ -95,4 +106,4 @@ gradlew test
 
 ## Notes
 
-- Les fichiers sous `.gradle/` sont générés par Gradle et ne devraient généralement pas être versionnés.
+- **Ne pas versionner**: `.gradle/`, `app/build/`, fichiers générés, `google-services.json` (contient des infos de projet)
