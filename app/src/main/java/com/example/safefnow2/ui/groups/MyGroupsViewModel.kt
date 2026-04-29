@@ -5,13 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.asLiveData
-import androidx.lifecycle.viewModelScope
 import com.example.safefnow2.data.local.entity.EmergencyGroup
 import com.example.safefnow2.data.local.DatabaseProvider
+import com.example.safefnow2.data.local.dao.GroupMemberCount
 import com.example.safefnow2.data.repository.GroupsOnlineFirstRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MyGroupsViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = GroupsOnlineFirstRepository(app)
@@ -19,17 +16,30 @@ class MyGroupsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun myGroups(userId: String): LiveData<List<GroupRowUi>> {
         val source = repo.myGroups(userId).asLiveData()
+        val countsSource = db.groupMemberDao().getCountsByGroupFlow().asLiveData()
         val out = MediatorLiveData<List<GroupRowUi>>()
-        out.addSource(source) { groups ->
-            viewModelScope.launch {
-                val rows = withContext(Dispatchers.IO) {
-                    groups.map { g ->
-                        val count = db.groupMemberDao().getByGroupId(g.idGroup).size
-                        GroupRowUi(group = g, memberCount = count)
-                    }
-                }
-                out.value = rows
+        var latestGroups: List<EmergencyGroup> = emptyList()
+        var latestCounts: Map<String, Int> = emptyMap()
+
+        fun publish() {
+            val groups = latestGroups
+            if (groups.isEmpty()) {
+                out.value = emptyList()
+                return
             }
+            out.value =
+                groups.map { g ->
+                    GroupRowUi(group = g, memberCount = latestCounts[g.idGroup] ?: 0)
+                }
+        }
+
+        out.addSource(source) { groups ->
+            latestGroups = groups
+            publish()
+        }
+        out.addSource(countsSource) { counts: List<GroupMemberCount> ->
+            latestCounts = counts.associate { it.idGroup to it.cnt }
+            publish()
         }
         return out
     }

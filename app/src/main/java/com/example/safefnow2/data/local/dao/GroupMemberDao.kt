@@ -8,6 +8,11 @@ import androidx.room.Query
 import com.example.safefnow2.data.local.entity.GroupMember
 import kotlinx.coroutines.flow.Flow
 
+data class GroupMemberCount(
+    val idGroup: String,
+    val cnt: Int,
+)
+
 @Dao
 interface GroupMemberDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -33,6 +38,9 @@ interface GroupMemberDao {
 
     @Query("SELECT * FROM group_member WHERE id_group = :idGroup")
     fun getByGroupIdFlow(idGroup: String): Flow<List<GroupMember>>
+
+    @Query("SELECT id_group AS idGroup, COUNT(*) AS cnt FROM group_member GROUP BY id_group")
+    fun getCountsByGroupFlow(): Flow<List<GroupMemberCount>>
 
     @Query("SELECT * FROM group_member WHERE id_user = :idUser")
     suspend fun getByUserId(idUser: String): List<GroupMember>

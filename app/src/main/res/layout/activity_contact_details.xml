@@ -91,19 +91,6 @@
             android:textSize="12sp"
             android:layout_marginBottom="8dp" />
 
-        <TextView
-            android:id="@+id/btnSetSosRecipient"
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:gravity="center"
-            android:text="@string/btn_set_sos_recipient"
-            android:textColor="#D32F2F"
-            android:textStyle="bold"
-            android:background="@drawable/btn_outline_red"
-            android:clickable="true"
-            android:focusable="true"
-            android:layout_marginBottom="8dp" />
-
         <Button
             android:id="@+id/contactInfoButton"
             android:layout_width="wrap_content"

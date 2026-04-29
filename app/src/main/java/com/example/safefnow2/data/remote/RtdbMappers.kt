@@ -37,11 +37,12 @@ private fun Map<String, Any?>.dbl(key: String): Double? {
 
 fun DataSnapshot.toUser(): User? {
     val m = mapValue()
-    val idUser = m.strAny("idUser", "id_user") ?: return null
-    val nom = m.strAny("nom") ?: return null
-    val prenom = m.strAny("prenom") ?: return null
-    val numTel = m.strAny("numTel", "num_tel", "phone") ?: return null
-    val password = m.strAny("password") ?: return null
+    val idUser = m.strAny("idUser", "id_user") ?: key?.trim() ?: return null
+    if (idUser.isBlank()) return null
+    val nom = m.strAny("nom") ?: ""
+    val prenom = m.strAny("prenom") ?: ""
+    val numTel = m.strAny("numTel", "num_tel", "phone") ?: ""
+    val password = m.strAny("password") ?: ""
     return User(
         idUser = idUser,
         nom = nom,

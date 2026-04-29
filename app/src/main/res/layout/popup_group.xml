@@ -87,6 +87,16 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tvPopupMembersLoading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Chargement des données..."
+        android:textSize="12sp"
+        android:textColor="#999999"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp" />
+
     <!-- Hint -->
     <TextView
         android:layout_width="wrap_content"

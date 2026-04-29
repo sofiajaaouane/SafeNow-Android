@@ -27,9 +27,13 @@ class GroupMembersOnlineFirstRepository(context: Context) {
     private val isOnline = ConnectivityObserver(appContext).isOnlineFlow()
 
     fun members(groupId: String): Flow<List<User>> {
-        val offlineFlow = roomMembers(groupId)
+        val roomMemberIdsFlow =
+            db.groupMemberDao()
+                .getByGroupIdFlow(groupId)
+                .map { list -> list.map { it.idUser }.distinct().sorted() }
 
-        return OnlineFirst.flow(
+        val memberIdsFlow: Flow<List<String>> =
+            OnlineFirst.flow(
             isOnline = isOnline,
             online = {
                 RtdbObserve.observe(rtdb.ref(RtdbPaths.groupMembers(groupId)))
@@ -68,24 +72,31 @@ class GroupMembersOnlineFirstRepository(context: Context) {
                             }
                         }
                     }
-                    .map { Unit }
+                    .map { snap ->
+                        snap.children
+                            .mapNotNull { it.key?.trim()?.takeIf { k -> k.isNotEmpty() } }
+                            .distinct()
+                            .sorted()
+                    }
                     .distinctUntilChanged()
-                    .combine(offlineFlow) { _, members -> members }
             },
-            offline = { offlineFlow }
+            offline = { roomMemberIdsFlow }
         )
             .flowOn(Dispatchers.IO)
-    }
 
-    private fun roomMembers(groupId: String): Flow<List<User>> {
-        return db.groupMemberDao().getByGroupIdFlow(groupId)
-            .combine(db.userDao().getAllFlow()) { members, users ->
+        return memberIdsFlow
+            .combine(db.userDao().getAllFlow()) { ids, users ->
                 val map = users.associateBy { it.idUser }
-                members.mapNotNull { gm -> map[gm.idUser] }
-            }
-            .map { list ->
-                val seen = linkedSetOf<String>()
-                list.filter { u -> seen.add(u.idUser) }
+                ids.map { uid ->
+                    map[uid]
+                        ?: User(
+                            idUser = uid,
+                            nom = "",
+                            prenom = "",
+                            numTel = "",
+                            password = "",
+                        )
+                }
             }
     }
 }

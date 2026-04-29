@@ -68,11 +68,11 @@ class MyGroupsActivity : AppCompatActivity() {
     }
 
     private suspend fun displayGroups(groups: List<GroupRowUi>) {
-        val groupsWithCount = groups.map { row -> Pair(row.group, row.memberCount) }
+        val onlyGroups = groups.map { row -> row.group }
 
         llGroups.removeAllViews()
 
-        if (groupsWithCount.isEmpty()) {
+        if (onlyGroups.isEmpty()) {
             val tvEmpty = TextView(this)
             tvEmpty.text     = "Vous n'avez pas encore de groupes"
             tvEmpty.textSize = 14f
@@ -83,20 +83,18 @@ class MyGroupsActivity : AppCompatActivity() {
             return
         }
 
-        groupsWithCount.forEach { (group, memberCount) ->
-            addGroupRow(group, memberCount)
+        onlyGroups.forEach { group ->
+            addGroupRow(group)
         }
     }
 
-    private fun addGroupRow(group: com.example.safefnow2.data.local.entity.EmergencyGroup, memberCount: Int) {
+    private fun addGroupRow(group: com.example.safefnow2.data.local.entity.EmergencyGroup) {
         val userId = SessionManager.getCurrentUserId(this) ?: return
 
         val row = LayoutInflater.from(this).inflate(R.layout.item_group, llGroups, false)
 
         row.findViewById<TextView>(R.id.tvGroupAvatar).text = group.name.take(2).uppercase()
         row.findViewById<TextView>(R.id.tvGroupName).text = group.name
-        row.findViewById<TextView>(R.id.tvMemberCount).text  =
-            "$memberCount membre${if (memberCount > 1) "s" else ""}"
 
         row.setOnClickListener {
             GroupPopupDialogFragment

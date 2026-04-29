@@ -136,37 +136,6 @@
                 android:background="#E0E0E0"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp"/>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/section_sos_history"
-                android:textColor="#111111"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
-            <ProgressBar
-                android:id="@+id/progressSosHistory"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:visibility="gone"/>
-
-            <TextView
-                android:id="@+id/tvSosHistoryEmpty"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/sos_history_empty"
-                android:textColor="#999999"
-                android:textSize="13sp"
-                android:visibility="gone"/>
-
-            <LinearLayout
-                android:id="@+id/llSosHistory"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"/>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

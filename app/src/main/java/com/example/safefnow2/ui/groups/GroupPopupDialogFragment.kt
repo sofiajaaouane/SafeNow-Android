@@ -52,13 +52,16 @@ class GroupPopupDialogFragment : DialogFragment() {
         val tvName = popupView.findViewById<TextView>(R.id.tvPopupGroupName)
         val tvAvatar = popupView.findViewById<TextView>(R.id.tvPopupGroupAvatar)
         val avatarsContainer = popupView.findViewById<LinearLayout>(R.id.llPopupMembersAvatars)
+        val tvLoading = popupView.findViewById<TextView>(R.id.tvPopupMembersLoading)
         val switchActivate = popupView.findViewById<Switch>(R.id.switchActivateGroup)
 
         tvName.text = groupName
         tvAvatar.text = groupName.take(2).uppercase()
         switchActivate.isChecked = sosGlobal == 1
 
+        tvLoading.visibility = android.view.View.VISIBLE
         vm.members(groupId).observe(this) { members ->
+            tvLoading.visibility = android.view.View.GONE
             latestMembers = members
             renderAvatars(avatarsContainer, members, groupId, currentUserId)
         }

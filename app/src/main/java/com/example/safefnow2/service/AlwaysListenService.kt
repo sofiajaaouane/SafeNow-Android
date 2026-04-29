@@ -17,6 +17,7 @@ import com.example.safefnow2.data.repository.SosInboxRepository
 import com.example.safefnow2.data.sync.SyncRepository
 import com.example.safefnow2.util.AlertHelper
 import com.example.safefnow2.util.SessionManager
+import com.google.firebase.database.DataSnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,6 +34,7 @@ class AlwaysListenService : Service() {
     private val rtdb by lazy { RtdbClient() }
     private val syncRepo by lazy { SyncRepository(DatabaseProvider.get(this), rtdb) }
     private var syncJob: kotlinx.coroutines.Job? = null
+    private var groupMembersWatches: MutableMap<String, kotlinx.coroutines.Job> = mutableMapOf()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -73,12 +75,41 @@ class AlwaysListenService : Service() {
             }
         }
 
+        fun updateGroupMemberWatches(membershipSnap: DataSnapshot) {
+            val groupIds = linkedSetOf<String>()
+            for (child in membershipSnap.children) {
+                val gid = child.key?.trim().orEmpty()
+                if (gid.isNotEmpty()) groupIds.add(gid)
+            }
+
+            val it = groupMembersWatches.keys.iterator()
+            while (it.hasNext()) {
+                val existing = it.next()
+                if (!groupIds.contains(existing)) {
+                    groupMembersWatches[existing]?.cancel()
+                    it.remove()
+                }
+            }
+
+            groupIds.forEach { gid ->
+                if (groupMembersWatches.containsKey(gid)) return@forEach
+                val job =
+                    RtdbObserve.observe(rtdb.ref(RtdbPaths.groupMembers(gid)))
+                        .onEach { scheduleSync() }
+                        .launchIn(scope)
+                groupMembersWatches[gid] = job
+            }
+        }
+
         // Initial sync.
         scheduleSync()
 
         // Watch key RTDB paths and refresh Room cache when they change.
         RtdbObserve.observe(rtdb.ref(RtdbPaths.groupMembersByUser(userId)))
-            .onEach { scheduleSync() }
+            .onEach { snap ->
+                scheduleSync()
+                updateGroupMemberWatches(snap)
+            }
             .launchIn(scope)
 
         RtdbObserve.observe(rtdb.ref(RtdbPaths.declarationAlerts(userId)))

@@ -54,7 +54,6 @@ class ContactDetailsActivity : ComponentActivity() {
         val tvContactPhone = findViewById<TextView>(R.id.tvContactPhone)
         val tvContactEmail = findViewById<TextView>(R.id.tvContactEmail)
         val tvSosDeviceStatus = findViewById<TextView>(R.id.tvSosDeviceStatus)
-        val btnSetSosRecipient = findViewById<TextView>(R.id.btnSetSosRecipient)
         val btnContactSos = findViewById<FrameLayout>(R.id.btnContactSos)
         val btnInfo = findViewById<Button>(R.id.contactInfoButton)
 
@@ -68,21 +67,6 @@ class ContactDetailsActivity : ComponentActivity() {
 
         val db = DatabaseProvider.get(this)
         btnInfo.setOnClickListener { showContactInfoDialog() }
-
-        btnSetSosRecipient.setOnClickListener {
-            val id = resolvedPeerDeviceId
-            val user = contactUser
-            if (id.isNullOrBlank() || user == null) {
-                Toast.makeText(this, R.string.toast_sos_contact_no_device, Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
-            val prefs = SosDevicePrefs(this)
-            prefs.setPeerDeviceId(id)
-            val digits = user.numTel.filter { it.isDigit() }
-            prefs.setPeerPhoneDigits(digits)
-            prefs.setPeerDisplayName("${user.prenom} ${user.nom}".trim())
-            Toast.makeText(this, R.string.toast_sos_recipient_set, Toast.LENGTH_SHORT).show()
-        }
 
         btnContactSos.setOnClickListener {
             val user = contactUser ?: return@setOnClickListener

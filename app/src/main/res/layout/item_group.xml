@@ -35,13 +35,6 @@
             android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="#1A1A1A" />
-
-        <TextView
-            android:id="@+id/tvMemberCount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="13sp"
-            android:textColor="#999999" />
     </LinearLayout>
 
 

@@ -324,7 +324,16 @@ class OnlineRepository(
         if (memberIds.isEmpty()) return
 
         val sosId = UUID.randomUUID().toString()
-        val groupName = database.emergencyGroupDao().getById(groupId)?.name
+        var groupName = database.emergencyGroupDao().getById(groupId)?.name
+        if (groupName.isNullOrBlank()) {
+            val gSnap = rtdb.get(RtdbPaths.emergencyGroup(groupId))
+            val fromRtdb: String? =
+                gSnap.child("name").getValue(String::class.java)
+                    ?: gSnap.child("groupName").getValue(String::class.java)
+                    ?: gSnap.child("group_name").getValue(String::class.java)
+            groupName = fromRtdb
+        }
+        if (groupName.isNullOrBlank()) groupName = "Groupe"
         val now = createAlertAndSenderDeclaration(
             alertId = sosId,
             senderId = currentUserId,

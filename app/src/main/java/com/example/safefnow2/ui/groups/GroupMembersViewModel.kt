@@ -96,11 +96,13 @@ private fun LiveData<List<User>>.mapToUi(): LiveData<List<MemberUi>> {
     val out = MediatorLiveData<List<MemberUi>>()
     out.addSource(this) { list ->
         out.value = list.mapIndexed { idx, u ->
-            val display = "${u.prenom} ${u.nom}".trim().ifEmpty { u.idUser }
+            val display = "${u.prenom} ${u.nom}".trim().ifEmpty { "Membre ${idx + 1}" }
             val initials = buildString {
                 u.prenom.trim().firstOrNull()?.uppercaseChar()?.let { append(it) }
                 u.nom.trim().firstOrNull()?.uppercaseChar()?.let { append(it) }
-            }.ifEmpty { "M${idx + 1}" }
+            }.ifEmpty {
+                "M"
+            }
             MemberUi(userId = u.idUser, displayName = display, initials = initials)
         }
     }

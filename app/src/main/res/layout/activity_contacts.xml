@@ -105,6 +105,6 @@
             android:contentDescription="@null"
             android:padding="14dp"
             android:scaleType="centerInside"
-            android:src="@drawable/ic_add_red" />
+            android:src="@drawable/ic_add_white" />
     </FrameLayout>
 </LinearLayout>
